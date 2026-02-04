@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Navigate the case live: click any item to jump across. (v1.4)</title>
+<title>Navigate the case live: click any item to jump across. (v1.5)</title>
 <style>
   :root {
     --bg: #0b1220;
@@ -52,6 +52,8 @@
     line-height: 1.2;
   }
   .tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+  .seasonbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 0 12px 0;}
+  .seasonlabel{font-size:12px;color:var(--muted);margin-right:4px;}
   .tabbtn {
     border: 1px solid var(--border);
     background: rgba(255,255,255,0.03);
@@ -253,8 +255,15 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Navigate the case live: click any item to jump across. (v1.4)</div>
+      <div class="title">Navigate the case live: click any item to jump across. (v1.5)</div>
       <div class="tabs" id="tabs"></div>
+    </div>
+    <div class="seasonbar">
+      <span class="seasonlabel">Season:</span>
+      <button class="btn small ghost" data-season="ALL" onclick="setInitSeason('ALL')">All</button>
+      <button class="btn small" data-season="S1" onclick="setInitSeason('S1')">S1</button>
+      <button class="btn small" data-season="S2" onclick="setInitSeason('S2')">S2</button>
+      <button class="btn small" data-season="S3" onclick="setInitSeason('S3')">S3</button>
     </div>
   </div>
 </header>
@@ -541,6 +550,43 @@ function findInits(groupId) { return DATA.initiatives.filter(i=>i.groupId===grou
 function findSystems(groupId) { return DATA.systems.filter(s=>s.groupId===groupId); }
 function findKpis(groupId) { return DATA.kpis.filter(k=>k.groupId===groupId); }
 
+
+function seasonFilteredInits(groupId) {
+  const all = findInits(groupId);
+  if (state.initSeason==="ALL") return all;
+  return all.filter(i=>i.season===state.initSeason);
+}
+function unionRelated(fromItems, candidates, topN) {
+  const m = new Map();
+  for (const it of (fromItems||[])) {
+    const rel = rankRelated(it, candidates, topN);
+    for (const c of rel) m.set(c.id, c);
+  }
+  return Array.from(m.values());
+}
+function systemsTouchedBySeason() {
+  if (state.initSeason==="ALL") return null;
+  const allow = new Set();
+  for (const g of DATA.challengeGroups) {
+    const inits = seasonFilteredInits(g.id);
+    if (!inits.length) continue;
+    const sysAll = findSystems(g.id);
+    unionRelated(inits, sysAll, 3).forEach(s=>allow.add(s.id));
+  }
+  return allow;
+}
+function kpisTouchedBySeason() {
+  if (state.initSeason==="ALL") return null;
+  const allow = new Set();
+  for (const g of DATA.challengeGroups) {
+    const inits = seasonFilteredInits(g.id);
+    if (!inits.length) continue;
+    const kAll = findKpis(g.id);
+    unionRelated(inits, kAll, 3).forEach(k=>allow.add(k.id));
+  }
+  return allow;
+}
+
 function pillList(items, kind, onClickFn) {
   if (!items.length) return `<span class="muted">None</span>`;
   return `<div class="pillwrap">` + items.map(it => {
@@ -559,17 +605,31 @@ function renderChallengeGroupDetail(groupId) {
   const g = groupById[groupId];
   if(!g) return `<div class="card"><div class="muted">Select a challenge.</div></div>`;
   const subs = findSubs(groupId);
-  const inits = findInits(groupId);
-  const sys = findSystems(groupId);
-  const kpis = findKpis(groupId);
+
+  const initsPool = findInits(groupId);
+  const sysAll = findSystems(groupId);
+  const kpisAll = findKpis(groupId);
+
+  const inits = (state.initSeason==="ALL") ? initsPool : initsPool.filter(i=>i.season===state.initSeason);
+  let sys = sysAll;
+  let kpis = kpisAll;
+
+  if (state.initSeason!=="ALL") {
+    const sysCand = unionRelated(inits, sysAll, 3);
+    const kCand = unionRelated(inits, kpisAll, 3);
+    if (sysCand.length) sys = sysCand;
+    if (kCand.length) kpis = kCand;
+  }
+
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
 
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><h2 style="margin:0">${esc(g.title)}</h2></div>
+        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><h2 style="margin:0">${esc(g.title)}</h2>${seasonChip}</div>
         <button class="btn small" onclick="pin('Challenges','challengeGroup','${g.id}')">Pin</button>
       </div>
-      <div class="muted">Parent challenge overview — shows ALL linked initiatives, systems and KPIs.</div>
+      <div class="muted">Parent challenge overview — click any sub‑challenge to zoom in.</div>
 
       <div class="hr"></div>
       <h3>Sub‑challenges (${subs.length})</h3>
@@ -592,23 +652,37 @@ function renderChallengeGroupDetail(groupId) {
   `;
 }
 
+
 function renderSubChallengeDetail(subId) {
   const sc = subById[subId];
   if(!sc) return `<div class="card"><div class="muted">Select a sub‑challenge.</div></div>`;
   const g = groupById[sc.groupId];
 
-  const initsAll = findInits(sc.groupId);
+  const initsPool = findInits(sc.groupId);
+  const initsAll = seasonFilteredInits(sc.groupId);
   const sysAll = findSystems(sc.groupId);
   const kAll = findKpis(sc.groupId);
 
   const inits = rankRelated(sc, initsAll, 5);
-  const sys = rankRelated(sc, sysAll, 5);
-  const ks = rankRelated(sc, kAll, 5);
+
+  let sys = rankRelated(sc, sysAll, 5);
+  let ks = rankRelated(sc, kAll, 5);
+
+  if (state.initSeason!=="ALL") {
+    const sysCand = unionRelated(inits, sysAll, 3);
+    const kCand = unionRelated(inits, kAll, 3);
+    if (sysCand.length) sys = rankRelated(sc, sysCand, 5);
+    if (kCand.length) ks = rankRelated(sc, kCand, 5);
+  }
+
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+
+  const poolNote = (state.initSeason==="ALL") ? `${inits.length} of ${initsPool.length}` : `${inits.length} of ${initsAll.length} (${esc(state.initSeason)})`;
 
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><span class="muted">Sub‑challenge</span></div>
+        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><span class="muted">Sub‑challenge</span>${seasonChip}</div>
         <button class="btn small" onclick="pin('Challenges','subChallenge','${sc.id}')">Pin</button>
       </div>
 
@@ -617,23 +691,22 @@ function renderSubChallengeDetail(subId) {
       <div class="hr"></div>
       <h3>Most relevant initiatives</h3>
       ${pillList(inits, "init", "jumpInit")}
-      <div class="muted" style="font-size:11.5px;margin-top:6px">(${inits.length} of ${initsAll.length} in ${g.id})</div>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">(${poolNote})</div>
 
       <div class="hr"></div>
       <h3>Enabling systems</h3>
       ${pillList(sys, "sys", "jumpSys")}
-      <div class="muted" style="font-size:11.5px;margin-top:6px">(${sys.length} of ${sysAll.length} in ${g.id})</div>
 
       <div class="hr"></div>
       <h3>How we measure it</h3>
       ${pillList(ks, "kpi", "jumpKpi")}
-      <div class="muted" style="font-size:11.5px;margin-top:6px">(${ks.length} of ${kAll.length} in ${g.id})</div>
 
       <div class="hr"></div>
       <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id} overview</button>
     </div>
   `;
 }
+
 
 function renderInitiativeDetail(initId) {
   const it = initById[initId];
@@ -681,7 +754,7 @@ function renderSystemDetail(sysId) {
   if(!s) return `<div class="card"><div class="muted">Select a system.</div></div>`;
   const g = groupById[s.groupId];
 
-  const initsAll = findInits(s.groupId);
+  const initsAll = seasonFilteredInits(s.groupId);
   const subsAll = findSubs(s.groupId);
   const kAll = findKpis(s.groupId);
 
@@ -694,7 +767,7 @@ function renderSystemDetail(sysId) {
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge sy mono">${esc(g.id)}</span><span class="muted">System</span></div>
+        <div class="row"><span class="badge sy mono">${esc(g.id)}</span><span class="muted">System</span>${(state.initSeason!=="ALL")?`<span class="chip season mono">${esc(state.initSeason)}</span>`:""}</div>
         <button class="btn small" onclick="pin('Systems','system','${s.id}')">Pin</button>
       </div>
       <h2>${esc(labelOf("system", s))}</h2>
@@ -726,7 +799,7 @@ function renderKpiDetail(kpiId) {
   const g = groupById[k.groupId];
 
   const sysAll = findSystems(k.groupId);
-  const initsAll = findInits(k.groupId);
+  const initsAll = seasonFilteredInits(k.groupId);
   const subsAll = findSubs(k.groupId);
 
   const sys = rankRelated(k, sysAll, 6);
@@ -736,7 +809,7 @@ function renderKpiDetail(kpiId) {
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge kp mono">${esc(g.id)}</span><span class="muted">KPI</span></div>
+        <div class="row"><span class="badge kp mono">${esc(g.id)}</span><span class="muted">KPI</span>${(state.initSeason!=="ALL")?`<span class="chip season mono">${esc(state.initSeason)}</span>`:""}</div>
         <button class="btn small" onclick="pin('KPIs','kpi','${k.id}')">Pin</button>
       </div>
       <h2>${esc(k.text)}</h2>
@@ -804,7 +877,14 @@ function setInitSeason(season) {
   document.querySelectorAll('[data-season]').forEach(b=>{
     b.classList.toggle('primary', b.dataset.season===season);
   });
+  // re-render lists impacted by season selection
   renderInitiativeList();
+  renderSystemList();
+  renderKpiList();
+  // refresh current detail panel (if any)
+  if (state.selected) {
+    select(state.selected.type, state.selected.id, {});
+  }
 }
 
 function renderInitiativeList() {
@@ -849,6 +929,11 @@ function renderSystemList() {
   let items = DATA.systems.slice();
   if (q) items = items.filter(s => (labelOf("system", s)).toLowerCase().includes(q) || groupTitle(s.groupId).toLowerCase().includes(q));
 
+  if (state.initSeason!=="ALL") {
+    const allow = systemsTouchedBySeason();
+    if (allow) items = items.filter(s => allow.has(s.id));
+  }
+
   items.sort((a,b)=>a.groupId.localeCompare(b.groupId));
 
   for (const s of items) {
@@ -874,6 +959,11 @@ function renderKpiList() {
 
   let items = DATA.kpis.slice();
   if (q) items = items.filter(k => (k.text||"").toLowerCase().includes(q) || groupTitle(k.groupId).toLowerCase().includes(q));
+
+  if (state.initSeason!=="ALL") {
+    const allow = kpisTouchedBySeason();
+    if (allow) items = items.filter(k => allow.has(k.id));
+  }
   items.sort((a,b)=>a.groupId.localeCompare(b.groupId));
 
   for (const k of items) {
@@ -1001,6 +1091,7 @@ function bootstrap() {
   renderSystemList();
   renderKpiList();
   renderWorkbench();
+  setInitSeason(state.initSeason);
 
   initFromHash();
   if (!state.selected) {
