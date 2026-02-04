@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Mikron Live Navigator — Challenges → Initiatives → Systems → KPIs</title>
+<title>M Live Navigator — Challenges → Initiatives → Systems → KPIs</title>
 <style>
   :root {
     --bg: #0b1220;
@@ -242,7 +242,7 @@
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <div class="title">Mikron Live Navigator <span class="chip mono">C→I→S→K</span></div>
+        <div class="title">M Live Navigator <span class="chip mono">C→I→S→K</span></div>
         <div class="sub">Navigate the case live: click any item to jump across. Data source: <span class="mono">WIP_B_v3.0.6_notes_cleaned.pptm</span></div>
       </div>
       <div class="tabs" id="tabs"></div>
@@ -771,7 +771,7 @@ function exportJSON() {
   const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "mikron_navigator_data.json";
+  a.download = "M_navigator_data.json";
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -854,11 +854,11 @@ function renderWorkbench() {
 }
 
 function saveWorkbench() {
-  localStorage.setItem("mikronNavigatorWorkbench", JSON.stringify(state.workbench));
+  localStorage.setItem("MNavigatorWorkbench", JSON.stringify(state.workbench));
   alert("Workbench saved in this browser.");
 }
 function loadWorkbench() {
-  const raw = localStorage.getItem("mikronNavigatorWorkbench");
+  const raw = localStorage.getItem("MNavigatorWorkbench");
   if (!raw) return alert("No saved workbench found.");
   try { state.workbench = JSON.parse(raw); renderWorkbench(); } catch(e) { alert("Could not load saved state."); }
 }
