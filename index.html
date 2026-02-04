@@ -107,7 +107,23 @@
     background: rgba(255,255,255,0.03);
   }
   .chip.season { color: #dbe9ff; border-color: rgba(106,166,255,.35); background: rgba(106,166,255,.12); }
-  .mono { font-family: var(--mono); }
+  
+  .chip.group { 
+    background: var(--c-challenge-bg);
+    border: 1px solid rgba(255, 215, 64, 0.55);
+    color: rgba(255, 232, 148, 0.95);
+    font-weight: 800;
+  }
+  .tableWrap{
+    max-height: 540px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.06);
+  }
+  .tableWrap table{ border-collapse: separate; border-spacing: 0; border: none; border-radius: 0; }
+  .tree details{ border-left: 4px solid var(--c-challenge); }
+.mono { font-family: var(--mono); }
 
   .list { display:flex; flex-direction: column; gap: 8px; margin-top: 12px; }
   .item {
@@ -329,7 +345,7 @@
     <div id="tab-dashboard" class="tab" style="display:none">
       <div class="panel">
         <div class="hd">
-          <div class="h1">Dashboard (from the Excel)</div>
+          <div class="h1">Dashboard (illustrative sample — demo only)</div>
           <div class="h2">Sort, filter, and click a row to jump into the navigator.</div>
         </div>
         <div class="bd">
@@ -341,7 +357,7 @@
             </div>
           </div>
           <div style="overflow:auto; margin-top: 12px; border:1px solid var(--border); border-radius: 12px;">
-            <table id="dashTable"></table>
+            <div class="tableWrap"><table id="dashTable"></table></div>
           </div>
           <div class="footer">Dashboard is for live navigation; Finance sign‑off still uses the audited benefits tracker.</div>
         </div>
@@ -474,9 +490,11 @@ function renderChallengeTree() {
     if (q && !matchesGroup && matchesSubs.length===0) continue;
 
     const d = document.createElement("details");
-    d.open = (g.number<=2);
-    const s = document.createElement("summary");
-    s.innerHTML = `<span><span class="chip season mono">${g.id}</span> ${esc(g.title)}</span><span class="chip mono">${subs.length} sub</span>`;
+    d.open = false; // start collapsed
+    // If user is searching, auto-open groups that have a match
+    if(q && (g.title.toLowerCase().includes(q) || subs.some(s=> (s.text||'').toLowerCase().includes(q)))) d.open = true;
+const s = document.createElement("summary");
+    s.innerHTML = `<span><span class="chip group mono">${g.id}</span> ${esc(g.title)}</span><span class="chip mono">${subs.length} sub</span>`;
     d.appendChild(s);
 
     const subDiv = document.createElement("div");
@@ -591,7 +609,7 @@ function renderInitiativeList() {
         <div class="t">${esc(i.text)}</div>
         <div class="row">
           ${i.season ? `<span class="chip season mono">${i.season}</span>` : ""}
-          <span class="chip mono">${i.groupId}</span>
+          <span class="chip group mono">${i.groupId}</span>
         </div>
       </div>
       <div class="m">${esc(groupTitle(i.groupId))}</div>
@@ -612,7 +630,7 @@ function renderInitiativeDetail(id) {
 
   host.innerHTML = `
     <h1>${esc(i.text)}</h1>
-    <p><span class="chip season mono">${esc(i.season || "—")}</span> <span class="chip mono">${gId}</span> ${esc(groupTitle(gId))}</p>
+    <p><span class="chip season mono">${esc(i.season || "—")}</span> <span class="chip group mono">${gId}</span> ${esc(groupTitle(gId))}</p>
     <div class="section"><div class="st">Addresses</div>${linkPills(subs, "jumpSub", "challenge")}</div>
     <div class="section"><div class="st">Systems</div>${linkPills(sys, "jumpSys", "system")}</div>
     <div class="section"><div class="st">Measured by</div>${linkPills(k, "jumpKpi", "kpi")}</div>
@@ -643,7 +661,7 @@ function renderSystemList() {
     div.innerHTML = `
       <div class="row" style="justify-content: space-between;">
         <div class="t">${esc(s.text)}</div>
-        <div class="row"><span class="chip mono">${s.groupId}</span></div>
+        <div class="row"><span class="chip group mono">${s.groupId}</span></div>
       </div>
       <div class="m">${esc(groupTitle(s.groupId))}</div>
     `;
@@ -662,7 +680,7 @@ function renderSystemDetail(id) {
 
   host.innerHTML = `
     <h1>${esc(s.text)}</h1>
-    <p><span class="chip mono">${gId}</span> ${esc(groupTitle(gId))}</p>
+    <p><span class="chip group mono">${gId}</span> ${esc(groupTitle(gId))}</p>
     <div class="section"><div class="st">Used by initiatives</div>${linkPills(inits, "jumpInit", "initiative")}</div>
     <div class="section"><div class="st">Linked KPIs</div>${linkPills(k, "jumpKpi", "kpi")}</div>
     <div class="section">
@@ -692,7 +710,7 @@ function renderKpiList() {
     div.innerHTML = `
       <div class="row" style="justify-content: space-between;">
         <div class="t">${esc(k.text)}</div>
-        <div class="row"><span class="chip mono">${k.groupId}</span></div>
+        <div class="row"><span class="chip group mono">${k.groupId}</span></div>
       </div>
       <div class="m">${esc(groupTitle(k.groupId))}</div>
     `;
@@ -711,7 +729,7 @@ function renderKpiDetail(id) {
 
   host.innerHTML = `
     <h1>${esc(k.text)}</h1>
-    <p><span class="chip mono">${gId}</span> ${esc(groupTitle(gId))}</p>
+    <p><span class="chip group mono">${gId}</span> ${esc(groupTitle(gId))}</p>
     <div class="section"><div class="st">Systems that influence this</div>${linkPills(sys, "jumpSys", "system")}</div>
     <div class="section"><div class="st">Initiatives driving it</div>${linkPills(inits, "jumpInit", "initiative")}</div>
     <div class="section">
@@ -771,7 +789,7 @@ function exportJSON() {
   const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "M_navigator_data.json";
+  a.download = "mikron_navigator_data.json";
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -854,11 +872,11 @@ function renderWorkbench() {
 }
 
 function saveWorkbench() {
-  localStorage.setItem("MNavigatorWorkbench", JSON.stringify(state.workbench));
+  localStorage.setItem("mikronNavigatorWorkbench", JSON.stringify(state.workbench));
   alert("Workbench saved in this browser.");
 }
 function loadWorkbench() {
-  const raw = localStorage.getItem("MNavigatorWorkbench");
+  const raw = localStorage.getItem("mikronNavigatorWorkbench");
   if (!raw) return alert("No saved workbench found.");
   try { state.workbench = JSON.parse(raw); renderWorkbench(); } catch(e) { alert("Could not load saved state."); }
 }
