@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Navigate the case live: click any item to jump across. (v1.7)</title>
+<title>Navigate the case live: click any item to jump across (v2.0)</title>
 <style>
   :root {
     --bg: #0b1220;
@@ -71,6 +71,85 @@
   main { padding: 16px 0 28px; }
   .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Enhanced: 4-column grid */
+  .grid4 { display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 1400px) { .grid4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 900px) { .grid4 { grid-template-columns: 1fr; } }
+
+  /* Enhanced: Priority stars */
+  .priority {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    margin-left: 6px;
+  }
+  .priority-1 { color: #f59e0b; } /* ⭐⭐⭐ High */
+  .priority-2 { color: #eab308; } /* ⭐⭐ Medium */
+  .priority-3 { color: #84cc16; } /* ⭐ Low */
+
+  /* Enhanced: Impact badges */
+  .impact {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .impact-H { background: #ef4444; color: white; } /* High */
+  .impact-M { background: #f59e0b; color: white; } /* Medium */
+  .impact-L { background: #10b981; color: white; } /* Low */
+
+  /* Enhanced: Weight indicators */
+  .weight {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    margin-left: 4px;
+  }
+  .weight-bar {
+    display: inline-block;
+    height: 4px;
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 50px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .weight-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    transition: width 0.3s ease;
+  }
+
+  /* Enhanced: Link indicators */
+  .link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    margin: 4px 0;
+    background: rgba(0,0,0,0.12);
+    border-radius: 8px;
+    border-left: 3px solid var(--c-initiative);
+  }
+  .link-item:hover {
+    background: rgba(0,0,0,0.20);
+  }
+  .link-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
   .panel {
     background: rgba(16,26,48,.88);
@@ -255,7 +334,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Navigate the case live: click any item to jump across. (v1.7)</div>
+      <div class="title">Navigate the case live: click any item to jump across (v2.0)</div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -266,12 +345,16 @@
       <button class="btn small" data-season="S3" onclick="setInitSeason('S3')">S3</button>
       <span class="muted" style="margin:0 6px">|</span>
       <button class="btn small ghost" onclick="clearSelection()">Show all</button>
+      <span class="muted" style="margin:0 6px">|</span>
+      <span class="seasonlabel">View:</span>
+      <button class="btn small primary" id="btnColumnView" onclick="setViewMode('column')">📋 Column</button>
+      <button class="btn small" id="btnGraphView" onclick="setViewMode('graph')">🕸️ Graph</button>
     </div>
   </div>
 </header>
 
 <main>
-  <div class="wrap">
+  <div class="wrap" id="columnView">
     <div id="tab-challenges" class="tab">
       <div class="grid2">
         <div class="panel">
@@ -357,10 +440,50 @@
     </div>
 
   </div>
+
+  <!-- Graph View -->
+  <div class="wrap" id="graphView" style="display:none;">
+    <div class="panel" style="min-height:900px;">
+      <div class="hd">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div class="h1">🕸️ Graph View - CISK Flow Visualization</div>
+            <div class="h2" id="graphSubtitle">Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs</div>
+          </div>
+          <div class="row" style="gap:8px;">
+            <button class="btn small" id="graphBackBtn" onclick="graphGoBack()" style="display:none;">← Back</button>
+            <button class="btn small" onclick="graphZoomIn()">🔍+</button>
+            <button class="btn small" onclick="graphZoomOut()">🔍−</button>
+            <button class="btn small" onclick="graphReset()">↻ Reset</button>
+          </div>
+        </div>
+        <div id="graphSelectionInfo" style="display:none;margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Selected:</div>
+          <div style="font-size:12px;"></div>
+        </div>
+      </div>
+      <div class="bd" style="padding:0;">
+        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;"></canvas>
+      </div>
+      <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
+        <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#fbbf24;border-radius:4px;"></span> Groups</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#f0d24f;border-radius:4px;"></span> Sub-Challenges</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#8fd0ff;border-radius:4px;"></span> Initiatives</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1d4ed8;border-radius:4px;"></span> Systems</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:4px;"></span> KPIs</div>
+          <span class="muted">|</span>
+          <div class="muted">Click any node to filter • Click empty space or ← Back to restore</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
-const DATA = {"meta": {"generated": "2026-02-04T10:27:11", "sourceDeck": "WIP_B_v3.0.6_notes_cleaned.pptm"}, "challengeGroups": [{"id": "C1", "number": 1, "title": "Digital Transformation", "slide": 5}, {"id": "C2", "number": 2, "title": "Digital Architecture & Principles", "slide": 6}, {"id": "C3", "number": 3, "title": "ERP Consolidation Strategy", "slide": 7}, {"id": "C4", "number": 4, "title": "Operating Model & Governance", "slide": 8}, {"id": "C5", "number": 5, "title": "Security & Compliance", "slide": 9}, {"id": "C6", "number": 6, "title": "Risk & Mitigation", "slide": 10}], "subChallenges": [{"id": "C1.SC1", "groupId": "C1", "text": "Lead-time too long/variable across Order→Engineering→Supply→Build"}, {"id": "C1.SC2", "groupId": "C1", "text": "On-time delivery gaps; late surprises drive expediting & firefighting"}, {"id": "C1.SC3", "groupId": "C1", "text": "Inventory/WIP buffers due to limited visibility & planning discipline"}, {"id": "C1.SC4", "groupId": "C1", "text": "Cost transparency gaps (standard cost, variances, margin leakage)"}, {"id": "C1.SC5", "groupId": "C1", "text": "Digital services not yet packaged/scaled (remote support, predictive)"}, {"id": "C1.SC6", "groupId": "C1", "text": "Customer experience fragmented (3 CRMs); limited pipeline & service visibility; inconsistent customer master"}, {"id": "C2.SC1", "groupId": "C2", "text": "Fragmented landscape (multiple ERP/CRM instances; local solutions)"}, {"id": "C2.SC2", "groupId": "C2", "text": "Point‑to‑point integrations create fragility and high change cost"}, {"id": "C2.SC3", "groupId": "C2", "text": "No single trusted data layer for plant-to-board decisions"}, {"id": "C2.SC4", "groupId": "C2", "text": "OT/IT + IIoT constraints: segmented shop‑floor, sensor connectivity, uptime, safety, vendor access"}, {"id": "C2.SC5", "groupId": "C2", "text": "Cloud + connectivity heterogeneity (incl. Wi‑Fi/5G); resilience & DR not uniform"}, {"id": "C2.SC6", "groupId": "C2", "text": "Digital services scale needs secure connectivity + reusable patterns"}, {"id": "C3.SC1", "groupId": "C3", "text": "Multiple ERP cores (3 SAP instances) + local CN system + process variants → duplication & friction"}, {"id": "C3.SC2", "groupId": "C3", "text": "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"}, {"id": "C3.SC3", "groupId": "C3", "text": "Excel workarounds for planning, costing, reporting → slow decisions and errors"}, {"id": "C3.SC4", "groupId": "C3", "text": "Limited end‑to‑end traceability across PLM ↔ shop‑floor ↔ quality ↔ service"}, {"id": "C3.SC5", "groupId": "C3", "text": "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"}, {"id": "C3.SC6", "groupId": "C3", "text": "SAP program already in motion (partner likely selected) → need a health-check, not a restart"}, {"id": "C4.SC1", "groupId": "C4", "text": "IT perceived as reactive; unclear ownership → slow delivery and ‘firefighting’"}, {"id": "C4.SC2", "groupId": "C4", "text": "Decentralised divisions; low trust in group standards → resistance to harmonisation"}, {"id": "C4.SC3", "groupId": "C4", "text": "Portfolio noise: no single intake/waterline → too many priorities at once"}, {"id": "C4.SC4", "groupId": "C4", "text": "Change capacity constraints; training/adoption often under-funded"}, {"id": "C4.SC5", "groupId": "C4", "text": "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"}, {"id": "C4.SC6", "groupId": "C4", "text": "Business/IT misalignment: requirements and outcomes not co‑owned end‑to‑end"}, {"id": "C5.SC1", "groupId": "C5", "text": "Expanded attack surface (cloud, remote access, supplier connections, IoT)"}, {"id": "C5.SC2", "groupId": "C5", "text": "OT constraints + legacy devices → segmentation and patching are hard"}, {"id": "C5.SC3", "groupId": "C5", "text": "Identity & privileged access sprawl; inconsistent access governance"}, {"id": "C5.SC4", "groupId": "C5", "text": "Limited detection/response maturity (logging, SOC, incident routines)"}, {"id": "C5.SC5", "groupId": "C5", "text": "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"}, {"id": "C5.SC6", "groupId": "C5", "text": "Third‑party risk (partners, integrators) + SAP programme security gates"}, {"id": "C6.SC1", "groupId": "C6", "text": "If divisions resist standardisation, benefits won’t land (Excel/workarounds persist)"}, {"id": "C6.SC2", "groupId": "C6", "text": "If data quality is weak, planning and inventory KPIs won’t move"}, {"id": "C6.SC3", "groupId": "C6", "text": "If we disrupt plants during cutovers, trust is lost and programme stalls"}, {"id": "C6.SC4", "groupId": "C6", "text": "If scope/customisation grows, costs and timelines explode (clean core violated)"}, {"id": "C6.SC5", "groupId": "C6", "text": "If vendors/partners under‑deliver, knowledge and control erode"}, {"id": "C6.SC6", "groupId": "C6", "text": "If security/OT constraints are ignored, risk increases during transformation"}], "initiatives": [{"id": "C1.I1", "groupId": "C1", "season": "S1", "text": "Value streams & standard E2E processes (P2P, ETO, Service) + CRM blueprint (3→1)", "raw": "S1: Value streams & standard E2E processes (P2P, ETO, Service) + CRM blueprint (3→1)"}, {"id": "C1.I2", "groupId": "C1", "season": "S1", "text": "Planning discipline & control‑tower routines (S&OP/MRP, exception mgmt)", "raw": "S1: Planning discipline & control‑tower routines (S&OP/MRP, exception mgmt)"}, {"id": "C1.I3", "groupId": "C1", "season": "S2", "text": "Shop‑floor visibility on critical lines (WIP, bottlenecks, digital WI)", "raw": "S2: Shop‑floor visibility on critical lines (WIP, bottlenecks, digital WI)"}, {"id": "C1.I4", "groupId": "C1", "season": "S2", "text": "Closed‑loop quality & traceability (NC/CAPA, root‑cause analytics)", "raw": "S2: Closed‑loop quality & traceability (NC/CAPA, root‑cause analytics)"}, {"id": "C1.I5", "groupId": "C1", "season": "S2", "text": "Productise digital services (offers, pricing, portal; adoption KPIs)", "raw": "S2: Productise digital services (offers, pricing, portal; adoption KPIs)"}, {"id": "C1.I6", "groupId": "C1", "season": "S3", "text": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI", "raw": "S3: Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"}, {"id": "C2.I1", "groupId": "C2", "season": "S1", "text": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)", "raw": "S1: Confirm target architecture + principles (clean core, digital thread, secure-by-design)"}, {"id": "C2.I2", "groupId": "C2", "season": "S1", "text": "Integration standards + platform selection (API/events, iPaaS)", "raw": "S1: Integration standards + platform selection (API/events, iPaaS)"}, {"id": "C2.I3", "groupId": "C2", "season": "S1", "text": "Data governance + KPI semantic layer v1 (plant‑to‑board)", "raw": "S1: Data governance + KPI semantic layer v1 (plant‑to‑board)"}, {"id": "C2.I4", "groupId": "C2", "season": "S2", "text": "Implement iPaaS/API; retire top point‑to‑point interfaces", "raw": "S2: Implement iPaaS/API; retire top point‑to‑point interfaces"}, {"id": "C2.I5", "groupId": "C2", "season": "S2", "text": "Enterprise data platform + historian/time‑series (ERP/CRM/MES/PLM priority domains)", "raw": "S2: Enterprise data platform + historian/time‑series (ERP/CRM/MES/PLM priority domains)"}, {"id": "C2.I6", "groupId": "C2", "season": "S2", "text": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi‑Fi/5G, shop‑floor zones, DR)", "raw": "S2: Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi‑Fi/5G, shop‑floor zones, DR)"}, {"id": "C2.I7", "groupId": "C2", "season": "S3", "text": "End‑to‑end digital thread + cross‑site KPI model (PLM↔ERP↔MES↔service)", "raw": "S3: End‑to‑end digital thread + cross‑site KPI model (PLM↔ERP↔MES↔service)"}, {"id": "C3.I1", "groupId": "C3", "season": "S1", "text": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)", "raw": "S1: One S/4HANA template; clean core; explicit exceptions (incl. CN path)"}, {"id": "C3.I2", "groupId": "C3", "season": "S1", "text": "Master data ownership + quality rules (harmonised)", "raw": "S1: Master data ownership + quality rules (harmonised)"}, {"id": "C3.I3", "groupId": "C3", "season": "S1", "text": "Standard core processes (O2C, P2P, Plan‑to‑Produce, ETO)", "raw": "S1: Standard core processes (O2C, P2P, Plan‑to‑Produce, ETO)"}, {"id": "C3.I4", "groupId": "C3", "season": "S2", "text": "S/4 pilot live + Finance value gate; first rollout waves launched", "raw": "S2: S/4 pilot live + Finance value gate; first rollout waves launched"}, {"id": "C3.I5", "groupId": "C3", "season": "S1", "text": "Plant‑to‑board KPI layer (cost, inventory, delivery, quality)", "raw": "S1: Plant‑to‑board KPI layer (cost, inventory, delivery, quality)"}, {"id": "C3.I6", "groupId": "C3", "season": "S3", "text": "Complete waves + retire legacy; standard processes embedded", "raw": "S3: Complete waves + retire legacy; standard processes embedded"}, {"id": "C4.I1", "groupId": "C4", "season": "S1", "text": "Co‑owned Business/IT operating model (service + product/value partner)", "raw": "S1: Co‑owned Business/IT operating model (service + product/value partner)"}, {"id": "C4.I2", "groupId": "C4", "season": "S1", "text": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)", "raw": "S1: Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"}, {"id": "C4.I3", "groupId": "C4", "season": "S1", "text": "Finance‑auditable value governance (benefits tracker + quarterly value gates)", "raw": "S1: Finance‑auditable value governance (benefits tracker + quarterly value gates)"}, {"id": "C4.I4", "groupId": "C4", "season": "S1", "text": "Culture shift + adoption model (service → product/value; measurable uptake)", "raw": "S1: Culture shift + adoption model (service → product/value; measurable uptake)"}, {"id": "C4.I5", "groupId": "C4", "season": "S2", "text": "Right sourcing (outsource commodity ops; retain Competency Center)", "raw": "S2: Right sourcing (outsource commodity ops; retain Competency Center)"}, {"id": "C4.I6", "groupId": "C4", "season": "S3", "text": "Continuous improvement cadence (process mining / automation where justified)", "raw": "S3: Continuous improvement cadence (process mining / automation where justified)"}, {"id": "C5.I1", "groupId": "C5", "season": "S1", "text": "Risk‑based security roadmap (crown jewels, threats, prioritised controls)", "raw": "S1: Risk‑based security roadmap (crown jewels, threats, prioritised controls)"}, {"id": "C5.I2", "groupId": "C5", "season": "S1", "text": "Identity baseline incl. MFA + least privilege + JML + PAM", "raw": "S1: Identity baseline incl. MFA + least privilege + JML + PAM"}, {"id": "C5.I3", "groupId": "C5", "season": "S1", "text": "OT security baseline (segmentation, secure remote access, vuln routine)", "raw": "S1: OT security baseline (segmentation, secure remote access, vuln routine)"}, {"id": "C5.I4", "groupId": "C5", "season": "S2", "text": "Detection & response (central logging → SIEM/SOC; playbooks)", "raw": "S2: Detection & response (central logging → SIEM/SOC; playbooks)"}, {"id": "C5.I5", "groupId": "C5", "season": "S3", "text": "Resilience & audit readiness embedded (DR tests; OT patch/vuln cadence)", "raw": "S3: Resilience & audit readiness embedded (DR tests; OT patch/vuln cadence)"}, {"id": "C5.I6", "groupId": "C5", "season": "S1", "text": "Security culture + vendor risk + audit drills", "raw": "S1: Security culture + vendor risk + audit drills"}, {"id": "C6.I1", "groupId": "C6", "season": "S1", "text": "Standard vs local boundaries + exception governance", "raw": "S1: Standard vs local boundaries + exception governance"}, {"id": "C6.I2", "groupId": "C6", "season": "S1", "text": "Wave readiness gates + cutover/rollback playbook (plant-safe)", "raw": "S1: Wave readiness gates + cutover/rollback playbook (plant-safe)"}, {"id": "C6.I3", "groupId": "C6", "season": "S1", "text": "Benefits tracker + no‑double‑count rules; value gates (blueprint→pilot→scale)", "raw": "S1: Benefits tracker + no‑double‑count rules; value gates (blueprint→pilot→scale)"}, {"id": "C6.I4", "groupId": "C6", "season": "S2", "text": "Change system (super-users, training, incentives; adoption KPIs; Excel kill‑plan)", "raw": "S2: Change system (super-users, training, incentives; adoption KPIs; Excel kill‑plan)"}, {"id": "C6.I5", "groupId": "C6", "season": "S2", "text": "Vendor governance (SLAs, demos, health‑check, exit plan)", "raw": "S2: Vendor governance (SLAs, demos, health‑check, exit plan)"}, {"id": "C6.I6", "groupId": "C6", "season": "S3", "text": "Sustain value/risk control: tech‑debt retirement; benefits realised vs plan", "raw": "S3: Sustain value/risk control: tech‑debt retirement; benefits realised vs plan"}], "systems": [{"id": "C1.S1", "groupId": "C1", "text": "Core ERP (SAP S/4HANA as system of record)"}, {"id": "C1.S2", "groupId": "C1", "text": "Planning cockpit (MRP exceptions / APS where needed)"}, {"id": "C1.S3", "groupId": "C1", "text": "MES / Quality execution (critical lines; traceability)"}, {"id": "C1.S4", "groupId": "C1", "text": "PLM + Engineering change control (ECR/ECO) integrated"}, {"id": "C1.S5", "groupId": "C1", "text": "Enterprise data platform + KPI layer (BI, analytics, AI-ready)"}, {"id": "C1.S6", "groupId": "C1", "text": "CRM core (Salesforce 3→1) + customer portal + secure remote connectivity / IoT data capture"}, {"id": "C3.S1", "groupId": "C3", "text": "SAP S/4HANA as digital core + ‘clean core’ guardrails (standard first)"}, {"id": "C3.S2", "groupId": "C3", "text": "Master data governance & tooling (workflows, validation, ownership/RACI)"}, {"id": "C3.S3", "groupId": "C3", "text": "Integration platform (iPaaS/API/events) + retire point‑to‑point interfaces"}, {"id": "C3.S4", "groupId": "C3", "text": "MES/QMS integration on critical lines to unlock traceability & COPQ reduction"}, {"id": "C3.S5", "groupId": "C3", "text": "Delivery factory: testing, cutover runbooks, rehearsals, training & hypercare"}, {"id": "C3.S6", "groupId": "C3", "text": "Partner model + retained Competency Center (architecture, data, security, vendor governance)"}, {"id": "C4.S1", "groupId": "C4", "text": "Executive governance: ExCo steering + quarterly value gates + decision log"}, {"id": "C4.S2", "groupId": "C4", "text": "Digital investment framework: categories, scoring, waterline, benefits tracking"}, {"id": "C4.S3", "groupId": "C4", "text": "Product & process ownership (ERP / Data / Security / Service) + RACI"}, {"id": "C4.S4", "groupId": "C4", "text": "Service operations system: ITSM + service catalogue + SLA dashboards; ‘runner/repeater/stranger’ support tiers"}, {"id": "C4.S5", "groupId": "C4", "text": "Vendor & partner governance: managed services towers, SLAs, KPI dashboards, escalation paths"}, {"id": "C4.S6", "groupId": "C4", "text": "People & change system: change champions, training academy, incentives, role upgrades (PO, data owners)"}, {"id": "C5.S1", "groupId": "C5", "text": "MFA / Identity platform (SSO, conditional access)"}, {"id": "C5.S2", "groupId": "C5", "text": "PAM (privileged vault, session recording)"}, {"id": "C5.S3", "groupId": "C5", "text": "Endpoint protection (EDR) + device hygiene / patch tooling"}, {"id": "C5.S4", "groupId": "C5", "text": "Central logging + SIEM/SOAR + SOC (managed where useful)"}, {"id": "C5.S5", "groupId": "C5", "text": "Network segmentation (IT/OT zones), firewalls, secure remote access"}, {"id": "C5.S6", "groupId": "C5", "text": "Resilience: backup/DR, immutable backups, recovery testing"}, {"id": "C6.S1", "groupId": "C6", "text": "Programme control tower: PMO + risk register + decision log"}, {"id": "C6.S2", "groupId": "C6", "text": "Wave readiness scorecard + go/no‑go forum"}, {"id": "C6.S3", "groupId": "C6", "text": "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model"}, {"id": "C6.S4", "groupId": "C6", "text": "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack"}, {"id": "C6.S5", "groupId": "C6", "text": "Data governance system (owners, quality rules, stewardship tooling)"}, {"id": "C6.S6", "groupId": "C6", "text": "Partner performance dashboard + escalation paths (internal Competency Center)"}, {"id": "C2.S1", "groupId": "C2", "type": "system", "title": "Experience layer (CRM + customer portal + service)", "bullets": ["CRM / sales workflows", "Customer portal", "Service experience"]}, {"id": "C2.S2", "groupId": "C2", "type": "system", "title": "Business core (standard backbone)", "bullets": ["Core ERP (SAP S/4HANA)", "PLM (engineering change)", "MES / Quality (shop‑floor execution)"]}, {"id": "C2.S3", "groupId": "C2", "type": "system", "title": "Corporate applications (Finance / HR / etc.)", "bullets": ["Finance", "HR", "Other corporate apps"]}, {"id": "C2.S4", "groupId": "C2", "type": "system", "title": "Integration & event backbone", "bullets": ["API / integration platform (iPaaS)", "Events / pub‑sub", "OT / edge gateways (shop‑floor connectivity)"]}, {"id": "C2.S5", "groupId": "C2", "type": "system", "title": "Data & analytics platform", "bullets": ["Enterprise data platform", "Historian / time‑series for OT", "KPI semantic layer", "BI / dashboards"]}, {"id": "C2.S6", "groupId": "C2", "type": "system", "title": "Infrastructure foundation", "bullets": ["Hybrid cloud", "Network (LAN / Wi‑Fi / 5G)", "OT zones / segmentation foundations", "Disaster recovery"]}, {"id": "C2.S7", "groupId": "C2", "type": "system", "title": "Security & identity (applies to all layers)", "bullets": ["Identity (MFA / access)", "Central logging / SIEM", "Zone model + monitoring", "Audit evidence"]}], "kpis": [{"id": "C1.K1", "groupId": "C1", "text": "Lead time −15–20% (end‑to‑end, incl. engineering + supply)"}, {"id": "C1.K2", "groupId": "C1", "text": "On-time delivery +5–8 percentage points (definition agreed)"}, {"id": "C1.K3", "groupId": "C1", "text": "Inventory turns +10–15% + WIP aging reduced"}, {"id": "C1.K4", "groupId": "C1", "text": "Cost of poor quality (COPQ) −10% (scrap + rework + warranty)"}, {"id": "C1.K5", "groupId": "C1", "text": "Digital services revenue enabled +CHF 3–8m/year by Year 3"}, {"id": "C1.K6", "groupId": "C1", "text": "Net value KPI: benefits vs (investment + run‑cost Δ), Finance-signed quarterly"}, {"id": "C2.K1", "groupId": "C2", "text": "Core simplification: ERP instances (3→1); CRM instances (3→1)"}, {"id": "C2.K2", "groupId": "C2", "text": "Integration health: % interfaces via iPaaS/API (incl. OT); # point‑to‑point retired"}, {"id": "C2.K3", "groupId": "C2", "text": "Data quality: master data accuracy/completeness; “single version of truth” adoption"}, {"id": "C2.K4", "groupId": "C2", "text": "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"}, {"id": "C2.K5", "groupId": "C2", "text": "Security coverage: MFA/PAM/logging coverage; OT segmentation & secure remote access compliance"}, {"id": "C2.K6", "groupId": "C2", "text": "Delivery speed: time to onboard a new site/line/machine; change failure rate"}, {"id": "C3.K1", "groupId": "C3", "text": "Consolidation: ERP cores → 1; legacy systems retired per wave plan"}, {"id": "C3.K2", "groupId": "C3", "text": "Finance efficiency: close cycle time ↓; manual reconciliations ↓; auditability ↑"}, {"id": "C3.K3", "groupId": "C3", "text": "Operational control: inventory accuracy ↑; inventory turns +10–15%; WIP aging ↓"}, {"id": "C3.K4", "groupId": "C3", "text": "Cost transparency: standard cost coverage ↑; variance drill-down cycle ↓"}, {"id": "C3.K5", "groupId": "C3", "text": "Service to the business: fewer workarounds; process compliance/adoption ↑"}, {"id": "C3.K6", "groupId": "C3", "text": "Cost control: programme burn rate vs budget; run-cost per user/ticket ↓"}, {"id": "C4.K1", "groupId": "C4", "text": "Stakeholder trust: IT NPS / satisfaction ↑; fewer escalations"}, {"id": "C4.K2", "groupId": "C4", "text": "Delivery performance: % initiatives delivered on time/on value; cycle time idea→release ↓"}, {"id": "C4.K3", "groupId": "C4", "text": "Adoption: active usage, process compliance, training completion; Excel workarounds ↓"}, {"id": "C4.K4", "groupId": "C4", "text": "Run-cost optimisation: licences rationalised; cost per ticket ↓; run-cost Δ tracked"}, {"id": "C4.K5", "groupId": "C4", "text": "Governance effectiveness: decision cycle time ↓; fewer uncontrolled exceptions"}, {"id": "C4.K6", "groupId": "C4", "text": "Talent & culture: engagement ↑; critical roles filled; attrition ↓; capability coverage ↑"}, {"id": "C5.K1", "groupId": "C5", "text": "MFA coverage (%) + % privileged accounts under PAM"}, {"id": "C5.K2", "groupId": "C5", "text": "Vulnerability aging: % critical patched within SLA; OT compensating controls"}, {"id": "C5.K3", "groupId": "C5", "text": "MTTD and MTTR for security incidents (target ↓)"}, {"id": "C5.K4", "groupId": "C5", "text": "Phishing resilience: click rate ↓; training completion ↑"}, {"id": "C5.K5", "groupId": "C5", "text": "Audit readiness: # major findings = 0; time to produce evidence ↓"}, {"id": "C5.K6", "groupId": "C5", "text": "Resilience: backup restore success rate; RTO/RPO met in tests"}, {"id": "C6.K1", "groupId": "C6", "text": "Wave readiness score (% green) before go‑live; # waves delayed for readiness (ok)"}, {"id": "C6.K2", "groupId": "C6", "text": "Adoption: training completion; active users; process compliance rate"}, {"id": "C6.K3", "groupId": "C6", "text": "Data quality score (master + transactional); inventory accuracy"}, {"id": "C6.K4", "groupId": "C6", "text": "Delivery health: schedule variance, milestone hit rate, change failure rate"}, {"id": "C6.K5", "groupId": "C6", "text": "Cost control: burn rate vs budget; run‑cost delta tracked"}, {"id": "C6.K6", "groupId": "C6", "text": "Operational stability: incident rate during/after releases; downtime minutes"}]};
+// Data injected from Flask
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Digital Transformation"}, {"id": "C2", "number": 2, "priority": 1, "title": "Digital Architecture \u0026 Principles"}, {"id": "C3", "number": 3, "priority": 1, "title": "ERP Consolidation Strategy"}, {"id": "C4", "number": 4, "priority": 2, "title": "Operating Model \u0026 Governance"}, {"id": "C5", "number": 5, "priority": 1, "title": "Security \u0026 Compliance"}, {"id": "C6", "number": 6, "priority": 3, "title": "Risk \u0026 Mitigation"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC4", "impact": "L", "weight": 6}, {"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)", "season": "S1", "text": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "M", "weight": 6}], "id": "C1.I2", "raw": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)", "season": "S1", "text": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)", "season": "S2", "text": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 8}], "id": "C1.I4", "raw": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)", "season": "S2", "text": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "M", "weight": 9}], "id": "C1.I5", "raw": "Productise digital services (offers, pricing, portal; adoption KPIs)", "season": "S2", "text": "Productise digital services (offers, pricing, portal; adoption KPIs)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "L", "weight": 7}, {"challengeId": "C1.SC1", "impact": "H", "weight": 9}, {"challengeId": "C1.SC2", "impact": "M", "weight": 9}], "id": "C1.I6", "raw": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI", "season": "S3", "text": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "L", "weight": 5}], "id": "C2.I1", "raw": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)", "season": "S1", "text": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"}, {"challenges": [{"challengeId": "C2.SC6", "impact": "L", "weight": 5}], "id": "C2.I2", "raw": "Integration standards + platform selection (API/events, iPaaS)", "season": "S1", "text": "Integration standards + platform selection (API/events, iPaaS)"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 7}, {"challengeId": "C2.SC6", "impact": "L", "weight": 4}], "id": "C2.I3", "raw": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)", "season": "S1", "text": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 9}, {"challengeId": "C2.SC5", "impact": "M", "weight": 6}], "id": "C2.I4", "raw": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces", "season": "S2", "text": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "M", "weight": 8}, {"challengeId": "C2.SC2", "impact": "H", "weight": 7}], "id": "C2.I5", "raw": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)", "season": "S2", "text": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "H", "weight": 7}], "id": "C2.I6", "raw": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)", "season": "S2", "text": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC4", "impact": "M", "weight": 5}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I7", "raw": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)", "season": "S3", "text": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)"}, {"challenges": [{"challengeId": "C3.SC6", "impact": "M", "weight": 5}, {"challengeId": "C3.SC1", "impact": "H", "weight": 8}, {"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I1", "raw": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)", "season": "S1", "text": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I2", "raw": "Master data ownership + quality rules (harmonised)", "season": "S1", "text": "Master data ownership + quality rules (harmonised)"}, {"challenges": [{"challengeId": "C3.SC5", "impact": "M", "weight": 6}, {"challengeId": "C3.SC2", "impact": "M", "weight": 10}], "id": "C3.I3", "raw": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)", "season": "S1", "text": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "M", "weight": 7}, {"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I4", "raw": "S/4 pilot live + Finance value gate; first rollout waves launched", "season": "S2", "text": "S/4 pilot live + Finance value gate; first rollout waves launched"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 8}], "id": "C3.I5", "raw": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)", "season": "S1", "text": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 9}], "id": "C3.I6", "raw": "Complete waves + retire legacy; standard processes embedded", "season": "S3", "text": "Complete waves + retire legacy; standard processes embedded"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 10}, {"challengeId": "C4.SC3", "impact": "M", "weight": 7}], "id": "C4.I1", "raw": "Co\u2011owned Business/IT operating model (service + product/value partner)", "season": "S1", "text": "Co\u2011owned Business/IT operating model (service + product/value partner)"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 8}], "id": "C4.I2", "raw": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)", "season": "S1", "text": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I3", "raw": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)", "season": "S1", "text": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC1", "impact": "H", "weight": 9}, {"challengeId": "C4.SC6", "impact": "L", "weight": 7}], "id": "C4.I4", "raw": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)", "season": "S1", "text": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)"}, {"challenges": [{"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I5", "raw": "Right sourcing (outsource commodity ops; retain Competency Center)", "season": "S2", "text": "Right sourcing (outsource commodity ops; retain Competency Center)"}, {"challenges": [{"challengeId": "C4.SC6", "impact": "L", "weight": 6}, {"challengeId": "C4.SC3", "impact": "M", "weight": 4}], "id": "C4.I6", "raw": "Continuous improvement cadence (process mining / automation where justified)", "season": "S3", "text": "Continuous improvement cadence (process mining / automation where justified)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}, {"challengeId": "C5.SC2", "impact": "M", "weight": 4}], "id": "C5.I1", "raw": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)", "season": "S1", "text": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 7}, {"challengeId": "C5.SC4", "impact": "M", "weight": 6}], "id": "C5.I2", "raw": "Identity baseline incl. MFA + least privilege + JML + PAM", "season": "S1", "text": "Identity baseline incl. MFA + least privilege + JML + PAM"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}], "id": "C5.I3", "raw": "OT security baseline (segmentation, secure remote access, vuln routine)", "season": "S1", "text": "OT security baseline (segmentation, secure remote access, vuln routine)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "M", "weight": 6}, {"challengeId": "C5.SC1", "impact": "H", "weight": 6}], "id": "C5.I4", "raw": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)", "season": "S2", "text": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 5}, {"challengeId": "C5.SC5", "impact": "M", "weight": 7}, {"challengeId": "C5.SC6", "impact": "L", "weight": 7}], "id": "C5.I5", "raw": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)", "season": "S3", "text": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)"}, {"challenges": [{"challengeId": "C5.SC6", "impact": "H", "weight": 9}], "id": "C5.I6", "raw": "Security culture + vendor risk + audit drills", "season": "S1", "text": "Security culture + vendor risk + audit drills"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "L", "weight": 4}], "id": "C6.I1", "raw": "Standard vs local boundaries + exception governance", "season": "S1", "text": "Standard vs local boundaries + exception governance"}, {"challenges": [{"challengeId": "C6.SC4", "impact": "L", "weight": 6}], "id": "C6.I2", "raw": "Wave readiness gates + cutover/rollback playbook (plant-safe)", "season": "S1", "text": "Wave readiness gates + cutover/rollback playbook (plant-safe)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "M", "weight": 6}, {"challengeId": "C6.SC1", "impact": "L", "weight": 7}], "id": "C6.I3", "raw": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)", "season": "S1", "text": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "L", "weight": 5}], "id": "C6.I4", "raw": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)", "season": "S2", "text": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "M", "weight": 7}], "id": "C6.I5", "raw": "Vendor governance (SLAs, demos, health\u2011check, exit plan)", "season": "S2", "text": "Vendor governance (SLAs, demos, health\u2011check, exit plan)"}, {"challenges": [{"challengeId": "C6.SC1", "impact": "M", "weight": 7}, {"challengeId": "C6.SC2", "impact": "L", "weight": 4}], "id": "C6.I6", "raw": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan", "season": "S3", "text": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Lead time \u221215\u201320% (end\u2011to\u2011end, incl. engineering + supply)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 6}, {"systemId": "C1.S3", "weight": 8}], "text": "On-time delivery +5\u20138 percentage points (definition agreed)"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Inventory turns +10\u201315% + WIP aging reduced"}, {"id": "C1.K4", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Cost of poor quality (COPQ) \u221210% (scrap + rework + warranty)"}, {"id": "C1.K5", "systems": [{"systemId": "C1.S4", "weight": 7}, {"systemId": "C1.S1", "weight": 9}], "text": "Digital services revenue enabled +CHF 3\u20138m/year by Year 3"}, {"id": "C1.K6", "systems": [{"systemId": "C1.S3", "weight": 9}], "text": "Net value KPI: benefits vs (investment + run\u2011cost \u0394), Finance-signed quarterly"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 8}], "text": "Core simplification: ERP instances (3\u21921); CRM instances (3\u21921)"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S4", "weight": 7}, {"systemId": "C2.S3", "weight": 6}], "text": "Integration health: % interfaces via iPaaS/API (incl. OT); # point\u2011to\u2011point retired"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S2", "weight": 8}, {"systemId": "C2.S5", "weight": 7}], "text": "Data quality: master data accuracy/completeness; \u0027single version of truth\u0027 adoption"}, {"id": "C2.K4", "systems": [{"systemId": "C2.S3", "weight": 7}, {"systemId": "C2.S6", "weight": 9}], "text": "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"}, {"id": "C2.K5", "systems": [{"systemId": "C2.S5", "weight": 7}], "text": "Security coverage: MFA/PAM/logging coverage; OT segmentation \u0026 secure remote access compliance"}, {"id": "C2.K6", "systems": [{"systemId": "C2.S3", "weight": 8}], "text": "Delivery speed: time to onboard a new site/line/machine; change failure rate"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S5", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Consolidation: ERP cores \u2192 1; legacy systems retired per wave plan"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S4", "weight": 9}], "text": "Finance efficiency: close cycle time \u2193; manual reconciliations \u2193; auditability \u2191"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S4", "weight": 7}], "text": "Operational control: inventory accuracy \u2191; inventory turns +10\u201315%; WIP aging \u2193"}, {"id": "C3.K4", "systems": [{"systemId": "C3.S4", "weight": 6}, {"systemId": "C3.S2", "weight": 6}], "text": "Cost transparency: standard cost coverage \u2191; variance drill-down cycle \u2193"}, {"id": "C3.K5", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Service to the business: fewer workarounds; process compliance/adoption \u2191"}, {"id": "C3.K6", "systems": [{"systemId": "C3.S2", "weight": 9}], "text": "Cost control: programme burn rate vs budget; run-cost per user/ticket \u2193"}, {"id": "C4.K1", "systems": [{"systemId": "C4.S5", "weight": 8}, {"systemId": "C4.S1", "weight": 8}, {"systemId": "C4.S6", "weight": 8}], "text": "Stakeholder trust: IT NPS / satisfaction \u2191; fewer escalations"}, {"id": "C4.K2", "systems": [{"systemId": "C4.S3", "weight": 9}, {"systemId": "C4.S4", "weight": 7}], "text": "Delivery performance: % initiatives delivered on time/on value; cycle time idea\u2192release \u2193"}, {"id": "C4.K3", "systems": [{"systemId": "C4.S6", "weight": 9}, {"systemId": "C4.S2", "weight": 7}], "text": "Adoption: active usage, process compliance, training completion; Excel workarounds \u2193"}, {"id": "C4.K4", "systems": [{"systemId": "C4.S4", "weight": 6}], "text": "Run-cost optimisation: licences rationalised; cost per ticket \u2193; run-cost \u0394 tracked"}, {"id": "C4.K5", "systems": [{"systemId": "C4.S3", "weight": 10}, {"systemId": "C4.S4", "weight": 6}, {"systemId": "C4.S1", "weight": 7}], "text": "Governance effectiveness: decision cycle time \u2193; fewer uncontrolled exceptions"}, {"id": "C4.K6", "systems": [{"systemId": "C4.S1", "weight": 8}], "text": "Talent \u0026 culture: engagement \u2191; critical roles filled; attrition \u2193; capability coverage \u2191"}, {"id": "C5.K1", "systems": [{"systemId": "C5.S1", "weight": 9}, {"systemId": "C5.S2", "weight": 8}], "text": "MFA coverage (%) + % privileged accounts under PAM"}, {"id": "C5.K2", "systems": [{"systemId": "C5.S1", "weight": 9}], "text": "Vulnerability aging: % critical patched within SLA; OT compensating controls"}, {"id": "C5.K3", "systems": [{"systemId": "C5.S5", "weight": 8}, {"systemId": "C5.S3", "weight": 8}], "text": "MTTD and MTTR for security incidents (target \u2193)"}, {"id": "C5.K4", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S5", "weight": 6}], "text": "Phishing resilience: click rate \u2193; training completion \u2191"}, {"id": "C5.K5", "systems": [{"systemId": "C5.S2", "weight": 9}], "text": "Audit readiness: # major findings = 0; time to produce evidence \u2193"}, {"id": "C5.K6", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S6", "weight": 9}, {"systemId": "C5.S4", "weight": 9}], "text": "Resilience: backup restore success rate; RTO/RPO met in tests"}, {"id": "C6.K1", "systems": [{"systemId": "C6.S1", "weight": 9}, {"systemId": "C6.S6", "weight": 8}], "text": "Wave readiness score (% green) before go\u2011live; # waves delayed for readiness (ok)"}, {"id": "C6.K2", "systems": [{"systemId": "C6.S3", "weight": 9}, {"systemId": "C6.S2", "weight": 8}], "text": "Adoption: training completion; active users; process compliance rate"}, {"id": "C6.K3", "systems": [{"systemId": "C6.S5", "weight": 9}], "text": "Data quality score (master + transactional); inventory accuracy"}, {"id": "C6.K4", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Delivery health: schedule variance, milestone hit rate, change failure rate"}, {"id": "C6.K5", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Cost control: burn rate vs budget; run\u2011cost delta tracked"}, {"id": "C6.K6", "systems": [{"systemId": "C6.S1", "weight": 7}, {"systemId": "C6.S4", "weight": 9}], "text": "Operational stability: incident rate during/after releases; downtime minutes"}], "meta": {"generated": "2026-02-06", "sourceDeck": "Navigate the case live: click any item to jump across"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Lead-time too long/variable across Order\u2192Engineering\u2192Supply\u2192Build"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "On-time delivery gaps; late surprises drive expediting \u0026 firefighting"}, {"groupId": "C1", "id": "C1.SC3", "priority": 3, "text": "Inventory/WIP buffers due to limited visibility \u0026 planning discipline"}, {"groupId": "C1", "id": "C1.SC4", "priority": 3, "text": "Cost transparency gaps (standard cost, variances, margin leakage)"}, {"groupId": "C1", "id": "C1.SC5", "priority": 3, "text": "Digital services not yet packaged/scaled (remote support, predictive)"}, {"groupId": "C1", "id": "C1.SC6", "priority": 1, "text": "Customer experience fragmented (3 CRMs); limited pipeline \u0026 service visibility; inconsistent customer master"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Fragmented landscape (multiple ERP/CRM instances; local solutions)"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Point\u2011to\u2011point integrations create fragility and high change cost"}, {"groupId": "C2", "id": "C2.SC3", "priority": 3, "text": "No single trusted data layer for plant-to-board decisions"}, {"groupId": "C2", "id": "C2.SC4", "priority": 3, "text": "OT/IT + IIoT constraints: segmented shop\u2011floor, sensor connectivity, uptime, safety, vendor access"}, {"groupId": "C2", "id": "C2.SC5", "priority": 2, "text": "Cloud + connectivity heterogeneity (incl. Wi\u2011Fi/5G); resilience \u0026 DR not uniform"}, {"groupId": "C2", "id": "C2.SC6", "priority": 3, "text": "Digital services scale needs secure connectivity + reusable patterns"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Multiple ERP cores (3 SAP instances) + local CN system + process variants \u2192 duplication \u0026 friction"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"}, {"groupId": "C3", "id": "C3.SC3", "priority": 3, "text": "Excel workarounds for planning, costing, reporting \u2192 slow decisions and errors"}, {"groupId": "C3", "id": "C3.SC4", "priority": 3, "text": "Limited end\u2011to\u2011end traceability across PLM \u2194 shop\u2011floor \u2194 quality \u2194 service"}, {"groupId": "C3", "id": "C3.SC5", "priority": 3, "text": "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"}, {"groupId": "C3", "id": "C3.SC6", "priority": 3, "text": "SAP program already in motion (partner likely selected) \u2192 need a health-check, not a restart"}, {"groupId": "C4", "id": "C4.SC1", "priority": 1, "text": "IT perceived as reactive; unclear ownership \u2192 slow delivery and \u0027firefighting\u0027"}, {"groupId": "C4", "id": "C4.SC2", "priority": 3, "text": "Decentralised divisions; low trust in group standards \u2192 resistance to harmonisation"}, {"groupId": "C4", "id": "C4.SC3", "priority": 3, "text": "Portfolio noise: no single intake/waterline \u2192 too many priorities at once"}, {"groupId": "C4", "id": "C4.SC4", "priority": 2, "text": "Change capacity constraints; training/adoption often under-funded"}, {"groupId": "C4", "id": "C4.SC5", "priority": 3, "text": "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"}, {"groupId": "C4", "id": "C4.SC6", "priority": 3, "text": "Business/IT misalignment: requirements and outcomes not co\u2011owned end\u2011to\u2011end"}, {"groupId": "C5", "id": "C5.SC1", "priority": 2, "text": "Expanded attack surface (cloud, remote access, supplier connections, IoT)"}, {"groupId": "C5", "id": "C5.SC2", "priority": 3, "text": "OT constraints + legacy devices \u2192 segmentation and patching are hard"}, {"groupId": "C5", "id": "C5.SC3", "priority": 2, "text": "Identity \u0026 privileged access sprawl; inconsistent access governance"}, {"groupId": "C5", "id": "C5.SC4", "priority": 3, "text": "Limited detection/response maturity (logging, SOC, incident routines)"}, {"groupId": "C5", "id": "C5.SC5", "priority": 3, "text": "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"}, {"groupId": "C5", "id": "C5.SC6", "priority": 2, "text": "Third\u2011party risk (partners, integrators) + SAP programme security gates"}, {"groupId": "C6", "id": "C6.SC1", "priority": 3, "text": "If divisions resist standardisation, benefits won\u0027t land (Excel/workarounds persist)"}, {"groupId": "C6", "id": "C6.SC2", "priority": 3, "text": "If data quality is weak, planning and inventory KPIs won\u0027t move"}, {"groupId": "C6", "id": "C6.SC3", "priority": 3, "text": "If we disrupt plants during cutovers, trust is lost and programme stalls"}, {"groupId": "C6", "id": "C6.SC4", "priority": 3, "text": "If scope/customisation grows, costs and timelines explode (clean core violated)"}, {"groupId": "C6", "id": "C6.SC5", "priority": 3, "text": "If vendors/partners under\u2011deliver, knowledge and control erode"}, {"groupId": "C6", "id": "C6.SC6", "priority": 2, "text": "If security/OT constraints are ignored, risk increases during transformation"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I6", "weight": 8}, {"initiativeId": "C1.I5", "weight": 9}], "text": "Core ERP (SAP S/4HANA as system of record)", "title": ""}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 5}], "text": "Planning cockpit (MRP exceptions / APS where needed)", "title": ""}, {"id": "C1.S3", "initiatives": [{"initiativeId": "C1.I3", "weight": 9}, {"initiativeId": "C1.I4", "weight": 9}, {"initiativeId": "C1.I1", "weight": 7}], "text": "MES / Quality execution (critical lines; traceability)", "title": ""}, {"id": "C1.S4", "initiatives": [{"initiativeId": "C1.I2", "weight": 9}], "text": "PLM + Engineering change control (ECR/ECO) integrated", "title": ""}, {"id": "C1.S5", "initiatives": [{"initiativeId": "C1.I1", "weight": 8}, {"initiativeId": "C1.I3", "weight": 9}], "text": "Enterprise data platform + KPI layer (BI, analytics, AI-ready)", "title": ""}, {"id": "C1.S6", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I5", "weight": 10}, {"initiativeId": "C1.I6", "weight": 9}, {"initiativeId": "C1.I3", "weight": 9}], "text": "CRM core (Salesforce 3\u21921) + customer portal + secure remote connectivity / IoT data capture", "title": ""}, {"bullets": ["CRM / sales workflows", "Customer portal", "Service experience"], "id": "C2.S1", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I7", "weight": 7}, {"initiativeId": "C2.I6", "weight": 8}], "text": "", "title": "Experience layer (CRM + customer portal + service)", "type": "system"}, {"bullets": ["Core ERP (SAP S/4HANA)", "PLM (engineering change)", "MES / Quality (shop\u2011floor execution)"], "id": "C2.S2", "initiatives": [{"initiativeId": "C2.I4", "weight": 9}], "text": "", "title": "Business core (standard backbone)", "type": "system"}, {"bullets": ["Finance", "HR", "Other corporate apps"], "id": "C2.S3", "initiatives": [{"initiativeId": "C2.I1", "weight": 7}, {"initiativeId": "C2.I2", "weight": 5}], "text": "", "title": "Corporate applications (Finance / HR / etc.)", "type": "system"}, {"bullets": ["API / integration platform (iPaaS)", "Events / pub\u2011sub", "OT / edge gateways (shop\u2011floor connectivity)"], "id": "C2.S4", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I4", "weight": 6}, {"initiativeId": "C2.I1", "weight": 6}], "text": "", "title": "Integration \u0026 event backbone", "type": "system"}, {"bullets": ["Enterprise data platform", "Historian / time\u2011series for OT", "KPI semantic layer", "BI / dashboards"], "id": "C2.S5", "initiatives": [{"initiativeId": "C2.I4", "weight": 8}, {"initiativeId": "C2.I2", "weight": 5}, {"initiativeId": "C2.I6", "weight": 6}, {"initiativeId": "C2.I3", "weight": 8}], "text": "", "title": "Data \u0026 analytics platform", "type": "system"}, {"bullets": ["Hybrid cloud", "Network (LAN / Wi\u2011Fi / 5G)", "OT zones / segmentation foundations", "Disaster recovery"], "id": "C2.S6", "initiatives": [{"initiativeId": "C2.I6", "weight": 5}], "text": "", "title": "Infrastructure foundation", "type": "system"}, {"bullets": ["Identity (MFA / access)", "Central logging / SIEM", "Zone model + monitoring", "Audit evidence"], "id": "C2.S7", "initiatives": [{"initiativeId": "C2.I6", "weight": 8}, {"initiativeId": "C2.I5", "weight": 7}, {"initiativeId": "C2.I1", "weight": 5}], "text": "", "title": "Security \u0026 identity (applies to all layers)", "type": "system"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I3", "weight": 10}, {"initiativeId": "C3.I6", "weight": 9}, {"initiativeId": "C3.I4", "weight": 10}], "text": "SAP S/4HANA as digital core + \u0027clean core\u0027 guardrails (standard first)", "title": ""}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I4", "weight": 5}, {"initiativeId": "C3.I6", "weight": 8}, {"initiativeId": "C3.I2", "weight": 7}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Master data governance \u0026 tooling (workflows, validation, ownership/RACI)", "title": ""}, {"id": "C3.S3", "initiatives": [{"initiativeId": "C3.I3", "weight": 5}, {"initiativeId": "C3.I6", "weight": 5}, {"initiativeId": "C3.I2", "weight": 8}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Integration platform (iPaaS/API/events) + retire point\u2011to\u2011point interfaces", "title": ""}, {"id": "C3.S4", "initiatives": [{"initiativeId": "C3.I3", "weight": 7}], "text": "MES/QMS integration on critical lines to unlock traceability \u0026 COPQ reduction", "title": ""}, {"id": "C3.S5", "initiatives": [{"initiativeId": "C3.I4", "weight": 8}], "text": "Delivery factory: testing, cutover runbooks, rehearsals, training \u0026 hypercare", "title": ""}, {"id": "C3.S6", "initiatives": [{"initiativeId": "C3.I6", "weight": 6}, {"initiativeId": "C3.I5", "weight": 7}], "text": "Partner model + retained Competency Center (architecture, data, security, vendor governance)", "title": ""}, {"id": "C4.S1", "initiatives": [{"initiativeId": "C4.I6", "weight": 5}], "text": "Executive governance: ExCo steering + quarterly value gates + decision log", "title": ""}, {"id": "C4.S2", "initiatives": [{"initiativeId": "C4.I5", "weight": 5}], "text": "Digital investment framework: categories, scoring, waterline, benefits tracking", "title": ""}, {"id": "C4.S3", "initiatives": [{"initiativeId": "C4.I6", "weight": 10}, {"initiativeId": "C4.I1", "weight": 8}, {"initiativeId": "C4.I4", "weight": 10}], "text": "Product \u0026 process ownership (ERP / Data / Security / Service) + RACI", "title": ""}, {"id": "C4.S4", "initiatives": [{"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I6", "weight": 6}], "text": "Service operations system: ITSM + service catalogue + SLA dashboards; \u0027runner/repeater/stranger\u0027 support tiers", "title": ""}, {"id": "C4.S5", "initiatives": [{"initiativeId": "C4.I5", "weight": 8}, {"initiativeId": "C4.I6", "weight": 6}, {"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I4", "weight": 5}], "text": "Vendor \u0026 partner governance: managed services towers, SLAs, KPI dashboards, escalation paths", "title": ""}, {"id": "C4.S6", "initiatives": [{"initiativeId": "C4.I4", "weight": 6}, {"initiativeId": "C4.I2", "weight": 8}], "text": "People \u0026 change system: change champions, training academy, incentives, role upgrades (PO, data owners)", "title": ""}, {"id": "C5.S1", "initiatives": [{"initiativeId": "C5.I1", "weight": 7}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I3", "weight": 8}, {"initiativeId": "C5.I6", "weight": 7}], "text": "MFA / Identity platform (SSO, conditional access)", "title": ""}, {"id": "C5.S2", "initiatives": [{"initiativeId": "C5.I1", "weight": 8}, {"initiativeId": "C5.I5", "weight": 7}], "text": "PAM (privileged vault, session recording)", "title": ""}, {"id": "C5.S3", "initiatives": [{"initiativeId": "C5.I5", "weight": 5}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I4", "weight": 6}, {"initiativeId": "C5.I3", "weight": 5}], "text": "Endpoint protection (EDR) + device hygiene / patch tooling", "title": ""}, {"id": "C5.S4", "initiatives": [{"initiativeId": "C5.I3", "weight": 7}], "text": "Central logging + SIEM/SOAR + SOC (managed where useful)", "title": ""}, {"id": "C5.S5", "initiatives": [{"initiativeId": "C5.I6", "weight": 6}, {"initiativeId": "C5.I2", "weight": 7}], "text": "Network segmentation (IT/OT zones), firewalls, secure remote access", "title": ""}, {"id": "C5.S6", "initiatives": [{"initiativeId": "C5.I4", "weight": 5}], "text": "Resilience: backup/DR, immutable backups, recovery testing", "title": ""}, {"id": "C6.S1", "initiatives": [{"initiativeId": "C6.I3", "weight": 8}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Programme control tower: PMO + risk register + decision log", "title": ""}, {"id": "C6.S2", "initiatives": [{"initiativeId": "C6.I4", "weight": 10}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Wave readiness scorecard + go/no\u2011go forum", "title": ""}, {"id": "C6.S3", "initiatives": [{"initiativeId": "C6.I4", "weight": 8}, {"initiativeId": "C6.I5", "weight": 6}], "text": "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model", "title": ""}, {"id": "C6.S4", "initiatives": [{"initiativeId": "C6.I1", "weight": 6}], "text": "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack", "title": ""}, {"id": "C6.S5", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I6", "weight": 7}], "text": "Data governance system (owners, quality rules, stewardship tooling)", "title": ""}, {"id": "C6.S6", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I5", "weight": 5}, {"initiativeId": "C6.I3", "weight": 6}, {"initiativeId": "C6.I2", "weight": 7}], "text": "Partner performance dashboard + escalation paths (internal Competency Center)", "title": ""}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},
@@ -372,10 +495,11 @@ const TABS = [
 
 let state = {
   tab: "challenges",
-  selected: null, // {type, id}
-  preview: null, // right-pane preview (does not change left selection)
+  selected: null,
+  preview: null,
   initSeason: "ALL",
-  workbench: { Challenges: [], Initiatives: [], Systems: [], KPIs: [] }
+  workbench: { Challenges: [], Initiatives: [], Systems: [], KPIs: [] },
+  viewMode: "column"  // "column" or "graph"
 };
 
 function byId(id) { return document.getElementById(id); }
@@ -404,7 +528,31 @@ function labelOf(type, obj) {
   return obj.title || obj.text || obj.id || "";
 }
 
-/* --- lightweight “best match” mapping --- */
+/* --- Enhanced: Visual indicators --- */
+function renderPriority(priority) {
+  if (!priority) return "";
+  const stars = { 1: '⭐⭐⭐', 2: '⭐⭐', 3: '⭐' };
+  return `<span class="priority priority-${priority}" title="Priority ${priority}">${stars[priority] || ''}</span>`;
+}
+
+function renderImpact(impact) {
+  if (!impact) return "";
+  const labels = { H: 'High', M: 'Medium', L: 'Low' };
+  return `<span class="impact impact-${impact}" title="${labels[impact]} Impact">${impact}</span>`;
+}
+
+function renderWeight(weight) {
+  if (!weight) return "";
+  return `<span class="weight" title="Weight: ${weight}/10">${weight}</span>`;
+}
+
+function renderWeightBar(weight) {
+  if (!weight) return "";
+  const percent = (weight / 10) * 100;
+  return `<span class="weight-bar"><span class="weight-bar-fill" style="width:${percent}%"></span></span>`;
+}
+
+/* --- lightweight "best match" mapping --- */
 function normWord(w){
   return w.toLowerCase().replace(/[^a-z0-9]+/g,"").trim();
 }
@@ -546,7 +694,6 @@ function renderGlobalDetailForTab(tab){
     const groups = DATA.challengeGroups.slice().sort((a,b)=>a.number-b.number);
     const subsCount = DATA.subChallenges.length;
 
-    // initiatives filtered by season
     const allInits = [];
     const sysAllow = systemsTouchedBySeason();
     const kAllow = kpisTouchedBySeason();
@@ -659,7 +806,6 @@ function openPreview(){
   select(p.type, p.id, {autoTab: inferTab(p.type)});
 }
 function preview(type,id){
-  // alias support
   if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
   if(state.preview && state.preview.type===type && state.preview.id===id){
     state.preview = null;
@@ -678,10 +824,8 @@ function clearSelection(){
 }
 
 function select(type, id, {autoTab=null}={}) {
-  // alias support (older buttons)
   if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
 
-  // toggle off
   if (state.selected && state.selected.type===type && state.selected.id===id) {
     clearSelection();
     return;
@@ -699,11 +843,76 @@ function select(type, id, {autoTab=null}={}) {
   updateHash();
 }
 
-function findSubs(groupId) { return DATA.subChallenges.filter(sc=>sc.groupId===groupId); }
-function findInits(groupId) { return DATA.initiatives.filter(i=>i.groupId===groupId); }
-function findSystems(groupId) { return DATA.systems.filter(s=>s.groupId===groupId); }
-function findKpis(groupId) { return DATA.kpis.filter(k=>k.groupId===groupId); }
+function findSubs(groupId) {
+  return DATA.subChallenges.filter(sc => sc.groupId === groupId);
+}
 
+function findInits(challengeId) {
+  // Check if this is a challenge group (e.g., "C1") or sub-challenge (e.g., "C1.SC1")
+  const isGroup = !challengeId.includes(".SC");
+
+  if (isGroup) {
+    // For challenge group: find initiatives linked to ANY of its sub-challenges
+    const subs = findSubs(challengeId);
+    const subIds = subs.map(sc => sc.id);
+
+    const enhanced = DATA.initiatives.filter(i =>
+      i.challenges && i.challenges.some(link => subIds.includes(link.challengeId))
+    );
+    if (enhanced.length > 0) return enhanced;
+
+    // Legacy format: use groupId
+    return DATA.initiatives.filter(i => i.groupId === challengeId || i.legacyGroupId === challengeId);
+  } else {
+    // For sub-challenge: find initiatives linked to this specific sub-challenge
+    const enhanced = DATA.initiatives.filter(i =>
+      i.challenges && i.challenges.some(link => link.challengeId === challengeId)
+    );
+    if (enhanced.length > 0) return enhanced;
+
+    // Legacy format: use groupId (extract group from sub-challenge ID)
+    const groupId = challengeId.split(".")[0];
+    return DATA.initiatives.filter(i => i.groupId === groupId || i.legacyGroupId === groupId);
+  }
+}
+
+function findSystemsForInitiatives(initiativeIds) {
+  // Enhanced format: find systems that link to these initiatives
+  return DATA.systems.filter(s =>
+    s.initiatives && s.initiatives.some(link => initiativeIds.includes(link.initiativeId))
+  );
+}
+
+function findSystems(challengeOrGroupId) {
+  // Enhanced format: find systems through initiatives
+  const inits = findInits(challengeOrGroupId);
+  if (inits.length > 0) {
+    const initIds = inits.map(i => i.id);
+    return findSystemsForInitiatives(initIds);
+  }
+
+  // Legacy format: use groupId
+  return DATA.systems.filter(s => s.groupId === challengeOrGroupId || s.legacyGroupId === challengeOrGroupId);
+}
+
+function findKpisForSystems(systemIds) {
+  // Enhanced format: find KPIs that link to these systems
+  return DATA.kpis.filter(k =>
+    k.systems && k.systems.some(link => systemIds.includes(link.systemId))
+  );
+}
+
+function findKpis(challengeOrGroupId) {
+  // Enhanced format: find KPIs through systems
+  const systems = findSystems(challengeOrGroupId);
+  if (systems.length > 0) {
+    const sysIds = systems.map(s => s.id);
+    return findKpisForSystems(sysIds);
+  }
+
+  // Legacy format: use groupId
+  return DATA.kpis.filter(k => k.groupId === challengeOrGroupId || k.legacyGroupId === challengeOrGroupId);
+}
 
 function seasonFilteredInits(groupId) {
   const all = findInits(groupId);
@@ -806,7 +1015,6 @@ function renderChallengeGroupDetail(groupId) {
   `;
 }
 
-
 function renderSubChallengeDetail(subId) {
   const sc = subById[subId];
   if(!sc) return `<div class="card"><div class="muted">Select a sub‑challenge.</div></div>`;
@@ -861,44 +1069,85 @@ function renderSubChallengeDetail(subId) {
   `;
 }
 
-
 function renderInitiativeDetail(initId) {
   const it = initById[initId];
   if(!it) return `<div class="card"><div class="muted">Select an initiative.</div></div>`;
-  const g = groupById[it.groupId];
-  const subsAll = findSubs(it.groupId);
-  const sysAll = findSystems(it.groupId);
-  const kAll = findKpis(it.groupId);
 
-  const subs = rankRelated(it, subsAll, 5);
-  const sys = rankRelated(it, sysAll, 6);
-  const ks = rankRelated(it, kAll, 6);
+  // Enhanced format: get linked challenges
+  let subs = [];
+  let challengeGroupId = null;
+  if (it.challenges && it.challenges.length > 0) {
+    // Enhanced format
+    subs = it.challenges.map(link => subById[link.challengeId]).filter(Boolean);
+    if (subs.length > 0 && subs[0].groupId) {
+      challengeGroupId = subs[0].groupId;
+    }
+  } else if (it.groupId || it.legacyGroupId) {
+    // Legacy format
+    challengeGroupId = it.groupId || it.legacyGroupId;
+    const subsAll = findSubs(challengeGroupId);
+    subs = rankRelated(it, subsAll, 5);
+  }
 
+  // Get systems linked to this initiative
+  let sys = [];
+  if (it.challenges && it.challenges.length > 0) {
+    // Enhanced format: find systems that link to this initiative
+    sys = DATA.systems.filter(s =>
+      s.initiatives && s.initiatives.some(link => link.initiativeId === it.id)
+    );
+  } else if (challengeGroupId) {
+    // Legacy format
+    const sysAll = findSystems(challengeGroupId);
+    sys = rankRelated(it, sysAll, 6);
+  }
+
+  // Get KPIs linked to those systems
+  let ks = [];
+  if (sys.length > 0) {
+    const sysIds = sys.map(s => s.id);
+    ks = DATA.kpis.filter(k =>
+      k.systems && k.systems.some(link => sysIds.includes(link.systemId))
+    );
+    if (ks.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const kAll = findKpis(challengeGroupId);
+      ks = rankRelated(it, kAll, 6);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const kAll = findKpis(challengeGroupId);
+    ks = rankRelated(it, kAll, 6);
+  }
+
+  const g = challengeGroupId ? groupById[challengeGroupId] : null;
+  const groupBadge = g ? `<span class="badge in mono">${esc(g.id)}</span>` : "";
   const season = it.season ? `<span class="chip season mono">${esc(it.season)}</span>` : "";
+  const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
+
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge in mono">${esc(g.id)}</span>${season}</div>
+        <div class="row">${groupBadge}${season}</div>
         <button class="btn small" onclick="pin('Initiatives','initiative','${it.id}')">Pin</button>
       </div>
       <h2>${esc(it.raw || it.text)}</h2>
 
       <div class="hr"></div>
-      <h3>Sub‑challenges it addresses</h3>
+      <h3>Sub‑challenges it addresses (${subs.length})</h3>
       <div class="pillwrap">
-        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+        ${subs.length > 0 ? subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("") : '<span class="muted">None found</span>'}
       </div>
 
       <div class="hr"></div>
-      <h3>Systems we use / build</h3>
-      ${pillList(sys, "sys", "jumpSys")}
+      <h3>Systems we use / build (${sys.length})</h3>
+      ${sys.length > 0 ? pillList(sys, "sys", "jumpSys") : '<span class="muted">None found</span>'}
 
       <div class="hr"></div>
-      <h3>KPIs this should move</h3>
-      ${pillList(ks, "kpi", "jumpKpi")}
+      <h3>KPIs this should move (${ks.length})</h3>
+      ${ks.length > 0 ? pillList(ks, "kpi", "jumpKpi") : '<span class="muted">None found</span>'}
 
-      <div class="hr"></div>
-      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>
+      ${backButton ? `<div class="hr"></div>${backButton}` : ""}
     </div>
   `;
 }
@@ -906,43 +1155,96 @@ function renderInitiativeDetail(initId) {
 function renderSystemDetail(sysId) {
   const s = sysById[sysId];
   if(!s) return `<div class="card"><div class="muted">Select a system.</div></div>`;
-  const g = groupById[s.groupId];
 
-  const initsAll = seasonFilteredInits(s.groupId);
-  const subsAll = findSubs(s.groupId);
-  const kAll = findKpis(s.groupId);
+  // Enhanced format: get linked initiatives
+  let inits = [];
+  let challengeGroupId = null;
+  if (s.initiatives && s.initiatives.length > 0) {
+    // Enhanced format
+    inits = s.initiatives.map(link => initById[link.initiativeId]).filter(Boolean);
+    // Apply season filter
+    if (state.initSeason !== "ALL") {
+      inits = inits.filter(i => i.season === state.initSeason);
+    }
+    // Get group from first initiative's challenges
+    if (inits.length > 0 && inits[0].challenges && inits[0].challenges.length > 0) {
+      const firstChallenge = subById[inits[0].challenges[0].challengeId];
+      if (firstChallenge) challengeGroupId = firstChallenge.groupId;
+    }
+  } else if (s.groupId || s.legacyGroupId) {
+    // Legacy format
+    challengeGroupId = s.groupId || s.legacyGroupId;
+    const initsAll = seasonFilteredInits(challengeGroupId);
+    inits = rankRelated(s, initsAll, 6);
+  }
 
-  const inits = rankRelated(s, initsAll, 6);
-  const subs = rankRelated(s, subsAll, 5);
-  const ks = rankRelated(s, kAll, 6);
+  // Get sub-challenges from initiatives
+  let subs = [];
+  if (inits.length > 0) {
+    const subSet = new Set();
+    inits.forEach(i => {
+      if (i.challenges && i.challenges.length > 0) {
+        i.challenges.forEach(link => {
+          const sc = subById[link.challengeId];
+          if (sc) subSet.add(sc);
+        });
+      }
+    });
+    subs = Array.from(subSet);
+    if (subs.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const subsAll = findSubs(challengeGroupId);
+      subs = rankRelated(s, subsAll, 5);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const subsAll = findSubs(challengeGroupId);
+    subs = rankRelated(s, subsAll, 5);
+  }
 
+  // Get KPIs linked to this system
+  let ks = [];
+  if (s.initiatives && s.initiatives.length > 0) {
+    // Enhanced format: find KPIs that link to this system
+    ks = DATA.kpis.filter(k =>
+      k.systems && k.systems.some(link => link.systemId === s.id)
+    );
+  } else if (challengeGroupId) {
+    // Legacy format
+    const kAll = findKpis(challengeGroupId);
+    ks = rankRelated(s, kAll, 6);
+  }
+
+  const g = challengeGroupId ? groupById[challengeGroupId] : null;
+  const groupBadge = g ? `<span class="badge sy mono">${esc(g.id)}</span>` : "";
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
   const bullets = (s.bullets && s.bullets.length) ? `<ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>` : "";
 
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge sy mono">${esc(g.id)}</span><span class="muted">System</span>${(state.initSeason!=="ALL")?`<span class="chip season mono">${esc(state.initSeason)}</span>`:""}</div>
+        <div class="row">${groupBadge}<span class="muted">System</span>${seasonChip}</div>
         <button class="btn small" onclick="pin('Systems','system','${s.id}')">Pin</button>
       </div>
       <h2>${esc(labelOf("system", s))}</h2>
       ${bullets}
 
       <div class="hr"></div>
-      <h3>Initiatives enabled</h3>
-      ${pillList(inits, "init", "jumpInit")}
+      <h3>Initiatives enabled (${inits.length})</h3>
+      ${inits.length > 0 ? pillList(inits, "init", "jumpInit") : '<span class="muted">None found</span>'}
 
       <div class="hr"></div>
-      <h3>Sub‑challenges where it matters</h3>
+      <h3>Sub‑challenges where it matters (${subs.length})</h3>
       <div class="pillwrap">
-        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+        ${subs.length > 0 ? subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("") : '<span class="muted">None found</span>'}
       </div>
 
       <div class="hr"></div>
-      <h3>KPIs we expect to move</h3>
-      ${pillList(ks, "kpi", "jumpKpi")}
+      <h3>KPIs we expect to move (${ks.length})</h3>
+      ${ks.length > 0 ? pillList(ks, "kpi", "jumpKpi") : '<span class="muted">None found</span>'}
 
-      <div class="hr"></div>
-      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>
+      ${backButton ? `<div class="hr"></div>${backButton}` : ""}
     </div>
   `;
 }
@@ -950,40 +1252,105 @@ function renderSystemDetail(sysId) {
 function renderKpiDetail(kpiId) {
   const k = kpiById[kpiId];
   if(!k) return `<div class="card"><div class="muted">Select a KPI.</div></div>`;
-  const g = groupById[k.groupId];
 
-  const sysAll = findSystems(k.groupId);
-  const initsAll = seasonFilteredInits(k.groupId);
-  const subsAll = findSubs(k.groupId);
+  // Enhanced format: get linked systems
+  let sys = [];
+  let challengeGroupId = null;
+  if (k.systems && k.systems.length > 0) {
+    // Enhanced format
+    sys = k.systems.map(link => sysById[link.systemId]).filter(Boolean);
+  } else if (k.groupId || k.legacyGroupId) {
+    // Legacy format
+    challengeGroupId = k.groupId || k.legacyGroupId;
+    const sysAll = findSystems(challengeGroupId);
+    sys = rankRelated(k, sysAll, 6);
+  }
 
-  const sys = rankRelated(k, sysAll, 6);
-  const inits = rankRelated(k, initsAll, 6);
-  const subs = rankRelated(k, subsAll, 5);
+  // Get initiatives from systems
+  let inits = [];
+  if (sys.length > 0) {
+    const initSet = new Set();
+    sys.forEach(s => {
+      if (s.initiatives && s.initiatives.length > 0) {
+        s.initiatives.forEach(link => {
+          const init = initById[link.initiativeId];
+          if (init) initSet.add(init);
+        });
+      }
+    });
+    inits = Array.from(initSet);
+    // Apply season filter
+    if (state.initSeason !== "ALL") {
+      inits = inits.filter(i => i.season === state.initSeason);
+    }
+    // Get group from first initiative
+    if (inits.length > 0 && inits[0].challenges && inits[0].challenges.length > 0) {
+      const firstChallenge = subById[inits[0].challenges[0].challengeId];
+      if (firstChallenge) challengeGroupId = firstChallenge.groupId;
+    }
+    if (inits.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const initsAll = seasonFilteredInits(challengeGroupId);
+      inits = rankRelated(k, initsAll, 6);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const initsAll = seasonFilteredInits(challengeGroupId);
+    inits = rankRelated(k, initsAll, 6);
+  }
+
+  // Get sub-challenges from initiatives
+  let subs = [];
+  if (inits.length > 0) {
+    const subSet = new Set();
+    inits.forEach(i => {
+      if (i.challenges && i.challenges.length > 0) {
+        i.challenges.forEach(link => {
+          const sc = subById[link.challengeId];
+          if (sc) subSet.add(sc);
+        });
+      }
+    });
+    subs = Array.from(subSet);
+    if (subs.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const subsAll = findSubs(challengeGroupId);
+      subs = rankRelated(k, subsAll, 5);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const subsAll = findSubs(challengeGroupId);
+    subs = rankRelated(k, subsAll, 5);
+  }
+
+  const g = challengeGroupId ? groupById[challengeGroupId] : null;
+  const groupBadge = g ? `<span class="badge kp mono">${esc(g.id)}</span>` : "";
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
 
   return `
     <div class="card">
       <div class="row" style="justify-content: space-between;">
-        <div class="row"><span class="badge kp mono">${esc(g.id)}</span><span class="muted">KPI</span>${(state.initSeason!=="ALL")?`<span class="chip season mono">${esc(state.initSeason)}</span>`:""}</div>
+        <div class="row">${groupBadge}<span class="muted">KPI</span>${seasonChip}</div>
         <button class="btn small" onclick="pin('KPIs','kpi','${k.id}')">Pin</button>
       </div>
       <h2>${esc(k.text)}</h2>
 
       <div class="hr"></div>
-      <h3>Systems that influence this KPI</h3>
-      ${pillList(sys, "sys", "jumpSys")}
+      <h3>Systems that influence this KPI (${sys.length})</h3>
+      ${sys.length > 0 ? pillList(sys, "sys", "jumpSys") : '<span class="muted">None found</span>'}
 
       <div class="hr"></div>
-      <h3>Initiatives that drive it</h3>
-      ${pillList(inits, "init", "jumpInit")}
+      <h3>Initiatives that drive it (${inits.length})</h3>
+      ${inits.length > 0 ? pillList(inits, "init", "jumpInit") : '<span class="muted">None found</span>'}
 
       <div class="hr"></div>
-      <h3>Sub‑challenges behind the KPI</h3>
+      <h3>Sub‑challenges behind the KPI (${subs.length})</h3>
       <div class="pillwrap">
-        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+        ${subs.length > 0 ? subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("") : '<span class="muted">None found</span>'}
       </div>
 
-      <div class="hr"></div>
-      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>
+      ${backButton ? `<div class="hr"></div>${backButton}` : ""}
     </div>
   `;
 }
@@ -1000,12 +1367,12 @@ function renderChallengeTree() {
     if (q && !matchesGroup && matchesSubs.length===0) continue;
 
     const d = document.createElement("details");
-    d.open = false; // start collapsed
+    d.open = false;
     if (q && (matchesGroup || matchesSubs.length)) d.open = true;
 
     const s = document.createElement("summary");
     s.setAttribute("data-key", `challengeGroup:${g.id}`);
-    s.innerHTML = `<span class="row" style="gap:8px"><span class="chip group mono">${esc(g.id)}</span><span>${esc(g.title)}</span></span><span class="chip mono">${subs.length} sub</span>`;
+    s.innerHTML = `<span class="row" style="gap:8px"><span class="chip group mono">${esc(g.id)}</span><span>${esc(g.title)}</span>${renderPriority(g.priority)}</span><span class="chip mono">${subs.length} sub</span>`;
     s.addEventListener("click", ()=>{ select("challengeGroup", g.id, {autoTab:"challenges"}); });
     d.appendChild(s);
 
@@ -1016,7 +1383,7 @@ function renderChallengeTree() {
       const div = document.createElement("div");
       div.className = "subitem";
       div.setAttribute("data-key", `subChallenge:${sc.id}`);
-      div.innerHTML = `${esc(sc.text)}`;
+      div.innerHTML = `${esc(sc.text)}${renderPriority(sc.priority)}`;
       div.onclick = () => select("subChallenge", sc.id, {autoTab:"challenges"});
       subDiv.appendChild(div);
     }
@@ -1031,44 +1398,111 @@ function setInitSeason(season) {
   document.querySelectorAll('[data-season]').forEach(b=>{
     b.classList.toggle('primary', b.dataset.season===season);
   });
-  // Re-render lists impacted by season selection
   renderInitiativeList();
   renderSystemList();
   renderKpiList();
-  // Refresh the right pane (selection stays unchanged)
   renderFocusedDetail();
-}
 
+  // Update graph view if it's active
+  if (state.viewMode === 'graph' && graph.canvas) {
+    // Clear selection when season changes
+    graph.selectedNode = null;
+    graph.filteredNodes = null;
+    graph.filteredLinks = null;
+    graph.history = [];
+
+    // Rebuild and redraw graph
+    const { nodes, links } = buildGraphData();
+    graph.nodes = nodes;
+    graph.links = links;
+    layoutGraph();
+    drawGraph();
+    updateGraphUI();
+  }
+}
 
 function renderInitiativeList() {
   const host = byId("initiativeList");
-  const q = (byId("searchInitiatives").value || "").toLowerCase().trim();
+  if (!host) return;
+
+  const searchInput = byId("searchInitiatives");
+  const q = searchInput ? (searchInput.value || "").toLowerCase().trim() : "";
   host.innerHTML = "";
 
-  let items = DATA.initiatives.slice();
-  if (state.initSeason !== "ALL") items = items.filter(i=>i.season===state.initSeason);
-  if (q) items = items.filter(i => (labelOf("initiative", i)).toLowerCase().includes(q) || groupTitle(i.groupId).toLowerCase().includes(q));
+  let items = DATA.initiatives ? DATA.initiatives.slice() : [];
 
+  // Season filter
+  if (state.initSeason !== "ALL") {
+    items = items.filter(i => i.season === state.initSeason);
+  }
+
+  // Search filter
+  if (q) {
+    items = items.filter(i => {
+      const text = (i.raw || i.text || "").toLowerCase();
+      if (text.includes(q)) return true;
+
+      // Check linked challenges
+      if (i.challenges && Array.isArray(i.challenges)) {
+        return i.challenges.some(link => {
+          const sc = subById[link.challengeId];
+          return sc && (sc.text.toLowerCase().includes(q) || sc.id.toLowerCase().includes(q));
+        });
+      }
+
+      // Legacy format
+      if (i.groupId || i.legacyGroupId) {
+        const gid = i.groupId || i.legacyGroupId;
+        return groupTitle(gid).toLowerCase().includes(q);
+      }
+      return false;
+    });
+  }
+
+  // Sort
   items.sort((a,b)=> {
-    const sa=a.season||"S9", sb=b.season||"S9";
-    if (sa!==sb) return sa.localeCompare(sb);
-    return a.groupId.localeCompare(b.groupId);
+    const sa = a.season || "S9";
+    const sb = b.season || "S9";
+    if (sa !== sb) return sa.localeCompare(sb);
+
+    const aKey = (a.challenges && a.challenges.length > 0) ? a.challenges[0].challengeId : (a.groupId || a.legacyGroupId || a.id);
+    const bKey = (b.challenges && b.challenges.length > 0) ? b.challenges[0].challengeId : (b.groupId || b.legacyGroupId || b.id);
+    return aKey.localeCompare(bKey);
   });
 
+  // Render items
   for (const i of items) {
     const div = document.createElement("div");
     div.className = "item";
     div.setAttribute("data-key", `initiative:${i.id}`);
     div.onclick = () => select("initiative", i.id, {autoTab:"initiatives"});
+
+    // Build badges
+    let badges = "";
+    if (i.challenges && i.challenges.length > 0) {
+      badges = i.challenges.slice(0, 3).map(link => {
+        const impact = link.impact ? ` <span class="impact impact-${link.impact}">${link.impact}</span>` : "";
+        const weight = link.weight ? ` <span class="weight">${link.weight}</span>` : "";
+        return `<span class="chip group mono">${esc(link.challengeId)}${impact}${weight}</span>`;
+      }).join(" ");
+      if (i.challenges.length > 3) badges += ` <span class="chip">+${i.challenges.length - 3}</span>`;
+    } else if (i.groupId || i.legacyGroupId) {
+      badges = `<span class="chip group mono">${esc(i.groupId || i.legacyGroupId)}</span>`;
+    }
+
+    const description = i.challenges && i.challenges.length > 0
+      ? `${i.challenges.length} challenge(s)`
+      : (i.groupId ? esc(groupTitle(i.groupId)) : "");
+
     div.innerHTML = `
       <div class="row" style="justify-content: space-between;">
         <div class="t">${esc(i.raw || i.text)}</div>
-        <div class="row">
+        <div class="row" style="gap:4px;flex-wrap:wrap;">
           ${i.season ? `<span class="chip season mono">${esc(i.season)}</span>` : ""}
-          <span class="chip group mono">${esc(i.groupId)}</span>
+          ${badges}
         </div>
       </div>
-      <div class="m">${esc(groupTitle(i.groupId))}</div>
+      ${description ? `<div class="m">${description}</div>` : ""}
     `;
     host.appendChild(div);
   }
@@ -1076,30 +1510,79 @@ function renderInitiativeList() {
 
 function renderSystemList() {
   const host = byId("systemList");
-  const q = (byId("searchSystems").value || "").toLowerCase().trim();
+  if (!host) return;
+
+  const searchInput = byId("searchSystems");
+  const q = searchInput ? (searchInput.value || "").toLowerCase().trim() : "";
   host.innerHTML = "";
 
-  let items = DATA.systems.slice();
-  if (q) items = items.filter(s => (labelOf("system", s)).toLowerCase().includes(q) || groupTitle(s.groupId).toLowerCase().includes(q));
+  let items = DATA.systems ? DATA.systems.slice() : [];
 
-  if (state.initSeason!=="ALL") {
+  // Search filter
+  if (q) {
+    items = items.filter(s => {
+      const text = labelOf("system", s).toLowerCase();
+      if (text.includes(q)) return true;
+
+      // Check linked initiatives
+      if (s.initiatives && Array.isArray(s.initiatives)) {
+        return s.initiatives.some(link => {
+          const init = initById[link.initiativeId];
+          return init && ((init.text || "").toLowerCase().includes(q) || init.id.toLowerCase().includes(q));
+        });
+      }
+
+      // Legacy format
+      if (s.groupId || s.legacyGroupId) {
+        const gid = s.groupId || s.legacyGroupId;
+        return groupTitle(gid).toLowerCase().includes(q);
+      }
+      return false;
+    });
+  }
+
+  // Season filter
+  if (state.initSeason !== "ALL") {
     const allow = systemsTouchedBySeason();
     if (allow) items = items.filter(s => allow.has(s.id));
   }
 
-  items.sort((a,b)=>a.groupId.localeCompare(b.groupId));
+  // Sort
+  items.sort((a,b)=> {
+    const aKey = (a.initiatives && a.initiatives.length > 0) ? a.initiatives[0].initiativeId : (a.groupId || a.legacyGroupId || a.id);
+    const bKey = (b.initiatives && b.initiatives.length > 0) ? b.initiatives[0].initiativeId : (b.groupId || b.legacyGroupId || b.id);
+    return aKey.localeCompare(bKey);
+  });
 
+  // Render items
   for (const s of items) {
     const div = document.createElement("div");
     div.className = "item";
     div.setAttribute("data-key", `system:${s.id}`);
     div.onclick = () => select("system", s.id, {autoTab:"systems"});
+
+    // Build badges
+    let badges = "";
+    if (s.initiatives && s.initiatives.length > 0) {
+      badges = s.initiatives.slice(0, 3).map(link => {
+        const weight = link.weight ? ` <span class="weight">${link.weight}</span>` : "";
+        return `<span class="chip group mono">${esc(link.initiativeId)}${weight}</span>`;
+      }).join(" ");
+      if (s.initiatives.length > 3) badges += ` <span class="chip">+${s.initiatives.length - 3}</span>`;
+    } else if (s.groupId || s.legacyGroupId) {
+      badges = `<span class="chip group mono">${esc(s.groupId || s.legacyGroupId)}</span>`;
+    }
+
+    const description = s.initiatives && s.initiatives.length > 0
+      ? `${s.initiatives.length} initiative(s)`
+      : (s.groupId ? esc(groupTitle(s.groupId)) : "");
+
     div.innerHTML = `
       <div class="row" style="justify-content: space-between;">
         <div class="t">${esc(labelOf("system", s))}</div>
-        <div class="row"><span class="chip group mono">${esc(s.groupId)}</span></div>
+        <div class="row" style="gap:4px;flex-wrap:wrap;">${badges}</div>
       </div>
-      <div class="m">${esc(groupTitle(s.groupId))}</div>
+      ${description ? `<div class="m">${description}</div>` : ""}
     `;
     host.appendChild(div);
   }
@@ -1107,29 +1590,79 @@ function renderSystemList() {
 
 function renderKpiList() {
   const host = byId("kpiList");
-  const q = (byId("searchKpis").value || "").toLowerCase().trim();
+  if (!host) return;
+
+  const searchInput = byId("searchKpis");
+  const q = searchInput ? (searchInput.value || "").toLowerCase().trim() : "";
   host.innerHTML = "";
 
-  let items = DATA.kpis.slice();
-  if (q) items = items.filter(k => (k.text||"").toLowerCase().includes(q) || groupTitle(k.groupId).toLowerCase().includes(q));
+  let items = DATA.kpis ? DATA.kpis.slice() : [];
 
-  if (state.initSeason!=="ALL") {
+  // Search filter
+  if (q) {
+    items = items.filter(k => {
+      const text = (k.text || "").toLowerCase();
+      if (text.includes(q)) return true;
+
+      // Check linked systems
+      if (k.systems && Array.isArray(k.systems)) {
+        return k.systems.some(link => {
+          const sys = sysById[link.systemId];
+          return sys && (labelOf("system", sys).toLowerCase().includes(q) || sys.id.toLowerCase().includes(q));
+        });
+      }
+
+      // Legacy format
+      if (k.groupId || k.legacyGroupId) {
+        const gid = k.groupId || k.legacyGroupId;
+        return groupTitle(gid).toLowerCase().includes(q);
+      }
+      return false;
+    });
+  }
+
+  // Season filter
+  if (state.initSeason !== "ALL") {
     const allow = kpisTouchedBySeason();
     if (allow) items = items.filter(k => allow.has(k.id));
   }
-  items.sort((a,b)=>a.groupId.localeCompare(b.groupId));
 
+  // Sort
+  items.sort((a,b)=> {
+    const aKey = (a.systems && a.systems.length > 0) ? a.systems[0].systemId : (a.groupId || a.legacyGroupId || a.id);
+    const bKey = (b.systems && b.systems.length > 0) ? b.systems[0].systemId : (b.groupId || b.legacyGroupId || b.id);
+    return aKey.localeCompare(bKey);
+  });
+
+  // Render items
   for (const k of items) {
     const div = document.createElement("div");
     div.className = "item";
     div.setAttribute("data-key", `kpi:${k.id}`);
     div.onclick = () => select("kpi", k.id, {autoTab:"kpis"});
+
+    // Build badges
+    let badges = "";
+    if (k.systems && k.systems.length > 0) {
+      badges = k.systems.slice(0, 3).map(link => {
+        const weight = link.weight ? ` <span class="weight">${link.weight}</span>` : "";
+        return `<span class="chip group mono">${esc(link.systemId)}${weight}</span>`;
+      }).join(" ");
+      if (k.systems.length > 3) badges += ` <span class="chip">+${k.systems.length - 3}</span>`;
+    } else if (k.groupId || k.legacyGroupId) {
+      badges = `<span class="chip group mono">${esc(k.groupId || k.legacyGroupId)}</span>`;
+    }
+
+    const description = k.systems && k.systems.length > 0
+      ? `${k.systems.length} system(s)`
+      : (k.groupId ? esc(groupTitle(k.groupId)) : "");
+
     div.innerHTML = `
       <div class="row" style="justify-content: space-between;">
         <div class="t">${esc(k.text)}</div>
-        <div class="row"><span class="chip group mono">${esc(k.groupId)}</span></div>
+        <div class="row" style="gap:4px;flex-wrap:wrap;">${badges}</div>
       </div>
-      <div class="m">${esc(groupTitle(k.groupId))}</div>
+      ${description ? `<div class="m">${description}</div>` : ""}
     `;
     host.appendChild(div);
   }
@@ -1236,6 +1769,926 @@ function wireSearch() {
   byId("searchKpis").addEventListener("input", renderKpiList);
 }
 
+/* ========================================
+   VIEW MODE TOGGLE
+   ======================================== */
+function setViewMode(mode) {
+  state.viewMode = mode;
+  const columnView = byId('columnView');
+  const graphView = byId('graphView');
+  const btnColumn = byId('btnColumnView');
+  const btnGraph = byId('btnGraphView');
+
+  if (mode === 'graph') {
+    columnView.style.display = 'none';
+    graphView.style.display = 'block';
+    btnColumn.classList.remove('primary');
+    btnGraph.classList.add('primary');
+    renderGraph();
+  } else {
+    columnView.style.display = 'block';
+    graphView.style.display = 'none';
+    btnColumn.classList.add('primary');
+    btnGraph.classList.remove('primary');
+  }
+}
+
+/* ========================================
+   GRAPH VIEW - Canvas-based Visualization
+   ======================================== */
+let graph = {
+  canvas: null,
+  ctx: null,
+  nodes: [],
+  links: [],
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  dragging: null,
+  hovering: null,
+  selectedNode: null,  // Currently selected node for filtering
+  filteredNodes: null, // Set of visible node IDs when filtered
+  filteredLinks: null, // Set of visible links when filtered
+  history: []          // Navigation history stack for back button
+};
+
+function buildGraphData() {
+  const nodes = [];
+  const links = [];
+
+  // Create nodes for challenge groups
+  const challengeGroupNodes = {};
+  DATA.challengeGroups.forEach(g => {
+    const node = {
+      id: `group-${g.id}`,
+      entityId: g.id,
+      type: 'group',
+      label: `${g.id}: ${g.title}`,
+      fullLabel: g.title,
+      priority: g.priority || 2,
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 50,
+      color: '#fbbf24' // Brighter yellow for groups
+    };
+    nodes.push(node);
+    challengeGroupNodes[g.id] = node;
+  });
+
+  // Create nodes for sub-challenges
+  const challengeNodes = {};
+  DATA.subChallenges.forEach(sc => {
+    const node = {
+      id: `challenge-${sc.id}`,
+      entityId: sc.id,
+      type: 'challenge',
+      label: `${sc.id.split('.')[1]}: ${sc.text.substring(0, 30)}${sc.text.length > 30 ? '...' : ''}`,
+      fullLabel: sc.text,
+      priority: sc.priority || 2,
+      groupId: sc.groupId,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#f0d24f'
+    };
+    nodes.push(node);
+    challengeNodes[sc.id] = node;
+
+    // Create link from group to sub-challenge
+    const groupNode = challengeGroupNodes[sc.groupId];
+    if (groupNode) {
+      links.push({
+        source: groupNode,
+        target: node,
+        weight: 10,
+        type: 'group-challenge'
+      });
+    }
+  });
+
+  // Create nodes for initiatives (with season filtering)
+  const initiativeNodes = {};
+  let filteredInitiatives = DATA.initiatives;
+
+  // Apply season filter
+  if (state.initSeason !== "ALL") {
+    filteredInitiatives = DATA.initiatives.filter(i => i.season === state.initSeason);
+  }
+
+  filteredInitiatives.forEach(init => {
+    const node = {
+      id: `initiative-${init.id}`,
+      entityId: init.id,
+      type: 'initiative',
+      label: `${init.id}: ${init.text.substring(0, 30)}${init.text.length > 30 ? '...' : ''}`,
+      fullLabel: init.text,
+      season: init.season,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#8fd0ff'
+    };
+    nodes.push(node);
+    initiativeNodes[init.id] = node;
+
+    // Create links from challenges to initiatives (top to bottom)
+    if (init.challenges && init.challenges.length > 0) {
+      init.challenges.forEach(link => {
+        const challengeNode = challengeNodes[link.challengeId];
+        if (challengeNode) {
+          links.push({
+            source: challengeNode,
+            target: node,
+            weight: link.weight || 5,
+            impact: link.impact || 'M',
+            type: 'challenge-initiative'
+          });
+        }
+      });
+    }
+  });
+
+  // Create nodes for systems
+  const systemNodes = {};
+  DATA.systems.forEach(sys => {
+    const label = sys.title || sys.text || sys.id;
+    const node = {
+      id: `system-${sys.id}`,
+      entityId: sys.id,
+      type: 'system',
+      label: `${sys.id}: ${label.substring(0, 30)}${label.length > 30 ? '...' : ''}`,
+      fullLabel: label,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#1d4ed8'
+    };
+    nodes.push(node);
+    systemNodes[sys.id] = node;
+
+    // Create links from initiatives to systems (top to bottom)
+    if (sys.initiatives && sys.initiatives.length > 0) {
+      sys.initiatives.forEach(link => {
+        const initiativeNode = initiativeNodes[link.initiativeId];
+        if (initiativeNode) {
+          links.push({
+            source: initiativeNode,
+            target: node,
+            weight: link.weight || 5,
+            type: 'initiative-system'
+          });
+        }
+      });
+    }
+  });
+
+  // Create nodes for KPIs
+  DATA.kpis.forEach(kpi => {
+    const node = {
+      id: `kpi-${kpi.id}`,
+      entityId: kpi.id,
+      type: 'kpi',
+      label: `${kpi.id}: ${kpi.text.substring(0, 30)}${kpi.text.length > 30 ? '...' : ''}`,
+      fullLabel: kpi.text,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#22c55e'
+    };
+    nodes.push(node);
+
+    // Create links from systems to KPIs (top to bottom)
+    if (kpi.systems && kpi.systems.length > 0) {
+      kpi.systems.forEach(link => {
+        const systemNode = systemNodes[link.systemId];
+        if (systemNode) {
+          links.push({
+            source: systemNode,
+            target: node,
+            weight: link.weight || 5,
+            type: 'system-kpi'
+          });
+        }
+      });
+    }
+  });
+
+  // If season filter is active, only include nodes that are connected
+  if (state.initSeason !== "ALL") {
+    const connectedNodeIds = new Set();
+
+    // Add all initiative nodes
+    Object.values(initiativeNodes).forEach(node => {
+      connectedNodeIds.add(node.id);
+    });
+
+    // Add connected challenges and groups
+    links.forEach(link => {
+      if (link.type === 'challenge-initiative') {
+        connectedNodeIds.add(link.source.id);
+        // Add parent group
+        const challengeNode = link.source;
+        links.forEach(groupLink => {
+          if (groupLink.type === 'group-challenge' && groupLink.target.id === challengeNode.id) {
+            connectedNodeIds.add(groupLink.source.id);
+          }
+        });
+      }
+    });
+
+    // Add connected systems
+    links.forEach(link => {
+      if (link.type === 'initiative-system') {
+        connectedNodeIds.add(link.target.id);
+      }
+    });
+
+    // Add connected KPIs
+    links.forEach(link => {
+      if (link.type === 'system-kpi' && connectedNodeIds.has(link.source.id)) {
+        connectedNodeIds.add(link.target.id);
+      }
+    });
+
+    // Filter nodes to only include connected ones
+    const filteredNodes = nodes.filter(node => connectedNodeIds.has(node.id));
+    const filteredLinks = links.filter(link =>
+      connectedNodeIds.has(link.source.id) && connectedNodeIds.has(link.target.id)
+    );
+
+    return { nodes: filteredNodes, links: filteredLinks };
+  }
+
+  return { nodes, links };
+}
+
+function renderGraph() {
+  const canvas = byId('graphCanvas');
+  if (!canvas) return;
+
+  graph.canvas = canvas;
+  graph.ctx = canvas.getContext('2d');
+
+  // Set actual canvas size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  graph.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  // Build graph data
+  const { nodes, links } = buildGraphData();
+  graph.nodes = nodes;
+  graph.links = links;
+
+  // Initial layout - spread vertically per column
+  layoutGraph();
+
+  // Draw
+  drawGraph();
+
+  // Setup interactions
+  setupGraphInteractions();
+
+  // Update UI
+  updateGraphUI();
+}
+
+function layoutGraph() {
+  // Vertical layout: rows from top to bottom
+  // Groups at top, then challenges, then initiatives, then systems, then KPIs
+  const rows = {
+    group: { y: 60, nodes: [] },
+    challenge: { y: 150, nodes: [] },
+    initiative: { y: 270, nodes: [] },
+    system: { y: 390, nodes: [] },
+    kpi: { y: 510, nodes: [] }
+  };
+
+  // Filter nodes if there's a selection
+  let visibleNodes = graph.nodes;
+  if (graph.selectedNode && graph.filteredNodes) {
+    visibleNodes = graph.nodes.filter(n => graph.filteredNodes.has(n.id));
+  }
+
+  visibleNodes.forEach(node => {
+    rows[node.type].nodes.push(node);
+  });
+
+  // Position nodes in rows with horizontal spacing
+  Object.values(rows).forEach(row => {
+    const horizontalSpacing = 220;
+    const rowNodes = row.nodes;
+    const totalWidth = rowNodes.length * horizontalSpacing;
+    const startX = Math.max(100, (1200 - totalWidth) / 2); // Center or start at 100
+
+    rowNodes.forEach((node, i) => {
+      node.x = startX + i * horizontalSpacing;
+      node.y = row.y;
+    });
+  });
+}
+
+function drawGraph() {
+  const ctx = graph.ctx;
+  const canvas = graph.canvas;
+
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Apply transformations
+  ctx.save();
+  ctx.translate(graph.panX, graph.panY);
+  ctx.scale(graph.zoom, graph.zoom);
+
+  // Draw links first
+  graph.links.forEach(link => {
+    drawLink(link);
+  });
+
+  // Draw nodes
+  graph.nodes.forEach(node => {
+    drawNode(node);
+  });
+
+  ctx.restore();
+}
+
+function drawLink(link) {
+  // Skip if this link is filtered out
+  if (graph.filteredLinks && !graph.filteredLinks.has(link)) {
+    return;
+  }
+
+  const ctx = graph.ctx;
+  const weight = link.weight || 5;
+  const thickness = 1 + (weight / 10) * 4; // 1 to 5px
+
+  // Draw line from bottom of source to top of target (vertical flow)
+  const sourceX = link.source.x;
+  const sourceY = link.source.y + link.source.height / 2;
+  const targetX = link.target.x;
+  const targetY = link.target.y - link.target.height / 2;
+
+  // Bezier curve for smoother vertical flow
+  const midY = (sourceY + targetY) / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(sourceX, sourceY);
+  ctx.bezierCurveTo(sourceX, midY, targetX, midY, targetX, targetY);
+
+  // Color based on link type
+  if (link.type === 'group-challenge') {
+    ctx.strokeStyle = `rgba(251, 191, 36, ${0.4 + weight / 25})`; // Brighter yellow for group links
+  } else if (link.type === 'challenge-initiative') {
+    ctx.strokeStyle = `rgba(240, 210, 79, ${0.4 + weight / 25})`;
+  } else if (link.type === 'initiative-system') {
+    ctx.strokeStyle = `rgba(143, 208, 255, ${0.4 + weight / 25})`;
+  } else {
+    ctx.strokeStyle = `rgba(34, 197, 94, ${0.4 + weight / 25})`;
+  }
+
+  ctx.lineWidth = thickness;
+  ctx.stroke();
+}
+
+function drawNode(node) {
+  // Skip if this node is filtered out
+  if (graph.filteredNodes && !graph.filteredNodes.has(node.id)) {
+    return;
+  }
+
+  const ctx = graph.ctx;
+  const w = node.width;
+  const h = node.height;
+  const x = node.x - w / 2;
+  const y = node.y - h / 2;
+  const radius = 12;
+
+  // Determine if selected
+  const isSelected = graph.selectedNode && graph.selectedNode.id === node.id;
+  const isHovered = graph.hovering === node;
+
+  // Draw rounded rectangle
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+
+  // Fill with color
+  ctx.fillStyle = node.color;
+  ctx.fill();
+
+  // Border
+  if (isSelected) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  } else if (isHovered) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else if (node.priority === 1) {
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw label text inside
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Wrap text if needed
+  const maxWidth = w - 10;
+  const lines = wrapText(ctx, node.label, maxWidth);
+  const lineHeight = 12;
+  const totalHeight = lines.length * lineHeight;
+  const startY = node.y - totalHeight / 2 + lineHeight / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, node.x, startY + i * lineHeight);
+  });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const testLine = currentLine + ' ' + words[i];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth) {
+      lines.push(currentLine);
+      currentLine = words[i];
+    } else {
+      currentLine = testLine;
+    }
+  }
+  lines.push(currentLine);
+  return lines.slice(0, 3); // Max 3 lines
+}
+
+function setupGraphInteractions() {
+  const canvas = graph.canvas;
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+  let clickStart = { x: 0, y: 0, time: 0 };
+
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
+    const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
+
+    clickStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+
+    // Check if clicking on a node
+    const node = findNodeAt(x, y);
+    if (node) {
+      graph.dragging = node;
+    } else {
+      isDragging = true;
+      dragStart = { x: e.clientX - graph.panX, y: e.clientY - graph.panY };
+      canvas.style.cursor = 'grabbing';
+    }
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
+    const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
+
+    if (graph.dragging) {
+      graph.dragging.x = x;
+      graph.dragging.y = y;
+      drawGraph();
+    } else if (isDragging) {
+      graph.panX = e.clientX - dragStart.x;
+      graph.panY = e.clientY - dragStart.y;
+      drawGraph();
+    } else {
+      // Hover detection
+      const node = findNodeAt(x, y);
+      if (node !== graph.hovering) {
+        graph.hovering = node;
+        canvas.style.cursor = node ? 'pointer' : 'grab';
+        drawGraph();
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseup', (e) => {
+    const timeDiff = Date.now() - clickStart.time;
+    const distMoved = Math.sqrt(
+      Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+    );
+
+    // If it's a quick click without much movement, treat as node selection
+    if (timeDiff < 300 && distMoved < 5) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
+      const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
+      const node = findNodeAt(x, y);
+
+      if (node) {
+        selectGraphNode(node);
+      } else {
+        // Clicked empty space - clear selection
+        clearGraphSelection();
+      }
+    }
+
+    graph.dragging = null;
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    graph.dragging = null;
+    isDragging = false;
+    graph.hovering = null;
+    canvas.style.cursor = 'grab';
+    drawGraph();
+  });
+
+  // Zoom with wheel
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    graph.zoom *= delta;
+    graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+    drawGraph();
+  });
+}
+
+function findNodeAt(x, y) {
+  // Check rectangles instead of circles
+  for (let node of graph.nodes) {
+    // Skip if filtered out
+    if (graph.filteredNodes && !graph.filteredNodes.has(node.id)) {
+      continue;
+    }
+
+    const left = node.x - node.width / 2;
+    const right = node.x + node.width / 2;
+    const top = node.y - node.height / 2;
+    const bottom = node.y + node.height / 2;
+
+    if (x >= left && x <= right && y >= top && y <= bottom) {
+      return node;
+    }
+  }
+  return null;
+}
+
+function selectGraphNode(node) {
+  if (graph.selectedNode && graph.selectedNode.id === node.id) {
+    // Clicking same node - deselect
+    clearGraphSelection();
+    return;
+  }
+
+  // Save current state to history before changing
+  if (graph.selectedNode || graph.filteredNodes) {
+    graph.history.push({
+      selectedNode: graph.selectedNode,
+      filteredNodes: graph.filteredNodes ? new Set(graph.filteredNodes) : null,
+      filteredLinks: graph.filteredLinks ? new Set(graph.filteredLinks) : null
+    });
+  }
+
+  graph.selectedNode = node;
+
+  // Build set of related nodes
+  const relatedNodes = new Set();
+  const relatedLinks = new Set();
+
+  relatedNodes.add(node.id);
+
+  // Find all nodes connected to this node
+  graph.links.forEach(link => {
+    if (link.source.id === node.id) {
+      relatedNodes.add(link.target.id);
+      relatedLinks.add(link);
+    } else if (link.target.id === node.id) {
+      relatedNodes.add(link.source.id);
+      relatedLinks.add(link);
+    }
+  });
+
+  // For challenge groups, include all sub-challenges and their downstream
+  if (node.type === 'group') {
+    // Find all sub-challenges in this group
+    const subChallenges = new Set();
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'group-challenge') {
+        subChallenges.add(link.target.id);
+      }
+    });
+
+    // Find initiatives linked to these sub-challenges
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (subChallenges.has(link.source.id) && link.type === 'challenge-initiative') {
+        initiativeNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find systems linked to those initiatives
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+        systemNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs linked to those systems
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For sub-challenges, include parent group and everything downstream
+  if (node.type === 'challenge') {
+    // Add parent group
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find initiatives linked to this challenge
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'challenge-initiative') {
+        initiativeNodes.add(link.target.id);
+      }
+    });
+
+    // Find systems linked to those initiatives
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+        systemNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs linked to those systems
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For initiatives, include full chain: challenges → groups AND systems → KPIs
+  if (node.type === 'initiative') {
+    // Find challenges this initiative addresses (upstream)
+    const challengeNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'challenge-initiative') {
+        challengeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find groups from those challenges
+    graph.links.forEach(link => {
+      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find systems using this initiative (downstream)
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'initiative-system') {
+        systemNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs linked to those systems
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For systems, include full chain: initiatives → challenges → groups AND KPIs
+  if (node.type === 'system') {
+    // Find initiatives using this system (upstream)
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'initiative-system') {
+        initiativeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find challenges from those initiatives
+    const challengeNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+        challengeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find groups from those challenges
+    graph.links.forEach(link => {
+      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs measuring this system (downstream)
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For KPIs, trace back through the full chain to groups
+  if (node.type === 'kpi') {
+    // Find systems measuring this KPI (upstream)
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'system-kpi') {
+        systemNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find initiatives using those systems
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.target.id) && link.type === 'initiative-system') {
+        initiativeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find challenges from those initiatives
+    const challengeNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+        challengeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find groups from those challenges
+    graph.links.forEach(link => {
+      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  graph.filteredNodes = relatedNodes;
+  graph.filteredLinks = relatedLinks;
+
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+function clearGraphSelection() {
+  // Don't add to history when clearing
+  graph.selectedNode = null;
+  graph.filteredNodes = null;
+  graph.filteredLinks = null;
+  graph.history = []; // Clear history when going back to full view
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+function graphGoBack() {
+  if (graph.history.length === 0) {
+    // No history - go to full view
+    clearGraphSelection();
+    return;
+  }
+
+  // Pop the last state from history
+  const previousState = graph.history.pop();
+  graph.selectedNode = previousState.selectedNode;
+  graph.filteredNodes = previousState.filteredNodes;
+  graph.filteredLinks = previousState.filteredLinks;
+
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+function updateGraphUI() {
+  // Update back button visibility and selection info
+  const backBtn = byId('graphBackBtn');
+  const selectionInfo = byId('graphSelectionInfo');
+  const subtitle = byId('graphSubtitle');
+
+  if (backBtn) {
+    if (graph.history.length > 0 || graph.selectedNode) {
+      backBtn.style.display = 'inline-block';
+      backBtn.disabled = graph.history.length === 0 && !graph.selectedNode;
+    } else {
+      backBtn.style.display = 'none';
+    }
+  }
+
+  if (selectionInfo) {
+    if (graph.selectedNode) {
+      const label = graph.selectedNode.fullLabel || graph.selectedNode.label;
+      selectionInfo.innerHTML = `<span class="chip mono">${esc(graph.selectedNode.entityId)}</span> ${esc(label)}`;
+      selectionInfo.style.display = 'block';
+    } else {
+      selectionInfo.style.display = 'none';
+    }
+  }
+
+  // Update subtitle to show season filter
+  if (subtitle) {
+    const baseText = "Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs";
+    if (state.initSeason !== "ALL") {
+      subtitle.textContent = `${baseText} • Filtered by ${state.initSeason}`;
+    } else {
+      subtitle.textContent = baseText;
+    }
+  }
+}
+
+function graphZoomIn() {
+  graph.zoom *= 1.2;
+  graph.zoom = Math.min(3, graph.zoom);
+  drawGraph();
+}
+
+function graphZoomOut() {
+  graph.zoom *= 0.8;
+  graph.zoom = Math.max(0.3, graph.zoom);
+  drawGraph();
+}
+
+function graphReset() {
+  graph.zoom = 1;
+  graph.panX = 0;
+  graph.panY = 0;
+  graph.selectedNode = null;
+  graph.filteredNodes = null;
+  graph.filteredLinks = null;
+  graph.history = [];
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+/* ========================================
+   BOOTSTRAP
+   ======================================== */
 function bootstrap() {
   renderTabs();
   wireSearch();
