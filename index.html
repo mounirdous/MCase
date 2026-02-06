@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Navigate the case live: click any item to jump across (v2.0)</title>
+<title>Navigate the case live: click any item to jump across (v2.2)</title>
 <style>
   :root {
     --bg: #0b1220;
@@ -328,13 +328,33 @@
   .wcard .t { font-size: 12.5px; font-weight: 750; }
   .wcard .m { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
   .wcard .actions { margin-top: 8px; display:flex; gap: 6px; flex-wrap: wrap; }
+
+  /* Graph View - Mobile responsive */
+  @media (max-width: 768px) {
+    .graph-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 12px;
+    }
+    .graph-title {
+      width: 100%;
+    }
+    .graph-controls {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    .graph-controls .btn {
+      flex: 0 0 auto;
+    }
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Navigate the case live: click any item to jump across (v2.0)</div>
+      <div class="title">Navigate the case live: click any item to jump across (v2.2)</div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -352,6 +372,8 @@
     </div>
   </div>
 </header>
+
+
 
 <main>
   <div class="wrap" id="columnView">
@@ -445,15 +467,16 @@
   <div class="wrap" id="graphView" style="display:none;">
     <div class="panel" style="min-height:900px;">
       <div class="hd">
-        <div class="row" style="justify-content:space-between;">
-          <div>
+        <div class="row graph-header" style="justify-content:space-between;">
+          <div class="graph-title">
             <div class="h1">🕸️ Graph View - CISK Flow Visualization</div>
             <div class="h2" id="graphSubtitle">Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs</div>
           </div>
-          <div class="row" style="gap:8px;">
+          <div class="row graph-controls" style="gap:8px;">
             <button class="btn small" id="graphBackBtn" onclick="graphGoBack()" style="display:none;">← Back</button>
-            <button class="btn small" onclick="graphZoomIn()">🔍+</button>
-            <button class="btn small" onclick="graphZoomOut()">🔍−</button>
+            <button class="btn small" onclick="graphZoomIn()">🔍+ Zoom In</button>
+            <button class="btn small" onclick="graphZoomOut()">🔍− Zoom Out</button>
+            <button class="btn small" onclick="graphFitToView()">⊡ Fit to View</button>
             <button class="btn small" onclick="graphReset()">↻ Reset</button>
           </div>
         </div>
@@ -823,14 +846,19 @@ function clearSelection(){
   updateHash();
 }
 
-function select(type, id, {autoTab=null}={}) {
+function select(type, id, {autoTab=null, forceSelect=false}={}) {
+  console.log('select() called - type:', type, 'id:', id, 'forceSelect:', forceSelect, 'current state.selected:', state.selected ? `${state.selected.type} ${state.selected.id}` : 'none');
+
   if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
 
-  if (state.selected && state.selected.type===type && state.selected.id===id) {
+  // Toggle off if already selected (unless forceSelect is true)
+  if (!forceSelect && state.selected && state.selected.type===type && state.selected.id===id) {
+    console.log('Same item already selected - toggling off');
     clearSelection();
     return;
   }
 
+  console.log('Setting state.selected to:', type, id);
   state.selected = {type, id};
   state.preview = null;
   if (autoTab) setTab(autoTab);
@@ -841,6 +869,12 @@ function select(type, id, {autoTab=null}={}) {
 
   renderFocusedDetail();
   updateHash();
+
+  // Sync with graph view if it's currently active AND not already syncing
+  if (state.viewMode === 'graph' && !isSyncing) {
+    console.log('Select called with:', type, id, 'viewMode:', state.viewMode);
+    syncColumnToGraphView(type, id);
+  }
 }
 
 function findSubs(groupId) {
@@ -1784,12 +1818,44 @@ function setViewMode(mode) {
     graphView.style.display = 'block';
     btnColumn.classList.remove('primary');
     btnGraph.classList.add('primary');
-    renderGraph();
+
+    console.log('=== SWITCHING TO GRAPH VIEW ===');
+    console.log('state.selected:', state.selected);
+    console.log('state.preview:', state.preview);
+    console.log('graph.canvas exists:', !!graph.canvas);
+    console.log('graph.selectedNode:', graph.selectedNode ? graph.selectedNode.id : 'none');
+
+    // Initialize graph if not already done
+    if (!graph.canvas) {
+      console.log('First time - rendering graph');
+      renderGraph();
+    }
+
+    // Check for either selection or preview (preview takes priority as it's most recent)
+    const itemToSync = state.preview || state.selected;
+
+    // Sync column selection/preview to graph when switching to graph view
+    if (itemToSync) {
+      console.log('Switching to graph view with item:', itemToSync.type, itemToSync.id);
+      setTimeout(() => {
+        console.log('About to call syncColumnToGraphView with:', itemToSync.type, itemToSync.id);
+        syncColumnToGraphView(itemToSync.type, itemToSync.id);
+      }, 10);
+    } else {
+      console.log('No item to sync - rendering full graph');
+      // No selection, just render the full graph
+      renderGraph();
+    }
   } else {
     columnView.style.display = 'block';
     graphView.style.display = 'none';
     btnColumn.classList.add('primary');
     btnGraph.classList.remove('primary');
+
+    console.log('Switching to column view - keeping column state unchanged');
+    console.log('Current state.selected:', state.selected ? `${state.selected.type} ${state.selected.id}` : 'none');
+
+    // DON'T sync from graph back to column - keep column view exactly as user left it
   }
 }
 
@@ -2126,7 +2192,7 @@ function drawLink(link) {
 
   const ctx = graph.ctx;
   const weight = link.weight || 5;
-  const thickness = 1 + (weight / 10) * 4; // 1 to 5px
+  const thickness = weight; // Direct weight-to-thickness: 1-10px
 
   // Draw line from bottom of source to top of target (vertical flow)
   const sourceX = link.source.x;
@@ -2328,14 +2394,14 @@ function setupGraphInteractions() {
     drawGraph();
   });
 
-  // Zoom with wheel
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    graph.zoom *= delta;
-    graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
-    drawGraph();
-  });
+  // Wheel zoom disabled - use buttons instead
+  // canvas.addEventListener('wheel', (e) => {
+  //   e.preventDefault();
+  //   const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  //   graph.zoom *= delta;
+  //   graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+  //   drawGraph();
+  // });
 }
 
 function findNodeAt(x, y) {
@@ -2594,6 +2660,15 @@ function selectGraphNode(node) {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+
+  // Sync with column view - clicking in graph should update column selection
+  console.log('Graph node selected - syncing to column view');
+  syncGraphToColumnView(node);
+
+  // Automatically fit to view after selecting a node
+  setTimeout(() => {
+    graphFitToView();
+  }, 50);
 }
 
 function clearGraphSelection() {
@@ -2605,6 +2680,9 @@ function clearGraphSelection() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+
+  // DON'T clear column view selection - keep column and graph views independent
+  console.log('Graph selection cleared - column view selection preserved');
 }
 
 function graphGoBack() {
@@ -2623,6 +2701,19 @@ function graphGoBack() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+
+  // Sync with column view if there's a selected node after going back
+  if (graph.selectedNode) {
+    console.log('Graph back navigation - syncing to column view');
+    syncGraphToColumnView(graph.selectedNode);
+  } else {
+    console.log('Graph back navigation - no node selected');
+  }
+
+  // Automatically fit to view after going back
+  setTimeout(() => {
+    graphFitToView();
+  }, 50);
 }
 
 function updateGraphUI() {
@@ -2684,6 +2775,352 @@ function graphReset() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+}
+
+function graphFitToView() {
+  // Get visible nodes (filtered or all)
+  const visibleNodes = graph.nodes.filter(node => {
+    if (graph.filteredNodes) {
+      return graph.filteredNodes.has(node.id);
+    }
+    return true;
+  });
+
+  if (visibleNodes.length === 0) return;
+
+  // Calculate bounding box of visible nodes
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+
+  visibleNodes.forEach(node => {
+    const left = node.x - node.width / 2;
+    const right = node.x + node.width / 2;
+    const top = node.y - node.height / 2;
+    const bottom = node.y + node.height / 2;
+
+    minX = Math.min(minX, left);
+    maxX = Math.max(maxX, right);
+    minY = Math.min(minY, top);
+    maxY = Math.max(maxY, bottom);
+  });
+
+  // Add padding
+  const padding = 50;
+  minX -= padding;
+  maxX += padding;
+  minY -= padding;
+  maxY += padding;
+
+  // Calculate content size
+  const contentWidth = maxX - minX;
+  const contentHeight = maxY - minY;
+
+  // Get canvas size (in logical pixels, not device pixels)
+  const canvas = graph.canvas;
+  const rect = canvas.getBoundingClientRect();
+  const canvasWidth = rect.width;
+  const canvasHeight = rect.height;
+
+  // Calculate zoom to fit
+  const zoomX = canvasWidth / contentWidth;
+  const zoomY = canvasHeight / contentHeight;
+  const newZoom = Math.min(zoomX, zoomY, 3); // Cap at max zoom of 3
+
+  // Calculate center of content
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  // Calculate pan to center the content
+  graph.zoom = newZoom;
+  graph.panX = canvasWidth / 2 - centerX * newZoom;
+  graph.panY = canvasHeight / 2 - centerY * newZoom;
+
+  drawGraph();
+}
+
+// Flag to prevent infinite sync loops
+let isSyncing = false;
+
+function syncGraphToColumnView(node) {
+  if (isSyncing) return;
+  isSyncing = true;
+
+  try {
+    // Map graph node type to column view type and extract entity ID
+    let type = node.type;
+    let id = node.entityId;
+
+    console.log('syncGraphToColumnView - mapping type:', type, 'id:', id);
+
+    // Update column view selection with appropriate tab
+    if (type === 'group') {
+      console.log('Calling select for challengeGroup:', id);
+      select('challengeGroup', id, {forceSelect: true, autoTab: 'challenges'});
+    } else if (type === 'challenge') {
+      console.log('Calling select for subChallenge:', id);
+      select('subChallenge', id, {forceSelect: true, autoTab: 'challenges'});
+    } else if (type === 'initiative') {
+      console.log('Calling select for initiative:', id);
+      select('initiative', id, {forceSelect: true, autoTab: 'initiatives'});
+    } else if (type === 'system') {
+      console.log('Calling select for system:', id);
+      select('system', id, {forceSelect: true, autoTab: 'systems'});
+    } else if (type === 'kpi') {
+      console.log('Calling select for kpi:', id);
+      select('kpi', id, {forceSelect: true, autoTab: 'kpis'});
+    } else {
+      console.warn('Unknown node type in syncGraphToColumnView:', type);
+    }
+  } finally {
+    isSyncing = false;
+  }
+}
+
+function syncColumnToGraphView(type, id) {
+  console.log('syncColumnToGraphView - isSyncing before:', isSyncing, 'canvas:', !!graph.canvas);
+
+  if (isSyncing) {
+    console.warn('Sync blocked by isSyncing flag - forcing reset');
+    isSyncing = false; // Force reset if stuck
+  }
+
+  if (!graph.canvas) {
+    console.log('syncColumnToGraphView skipped - no canvas');
+    return;
+  }
+
+  isSyncing = true;
+  console.log('syncColumnToGraphView - isSyncing set to TRUE');
+
+  try {
+    console.log('syncColumnToGraphView called with:', type, id);
+
+    // Map column view type to graph node type
+    let nodeType = type;
+    if (type === 'challengeGroup') nodeType = 'group';
+    if (type === 'subChallenge') nodeType = 'challenge';
+
+    console.log('Mapped to nodeType:', nodeType);
+
+    // Rebuild graph data temporarily ignoring season filter to ensure node exists
+    // (Column view selections should always be visible in graph)
+    const savedSeason = state.initSeason;
+    state.initSeason = "ALL";
+    const { nodes, links } = buildGraphData();
+    graph.nodes = nodes;
+    graph.links = links;
+    state.initSeason = savedSeason;
+
+    // Now find the node
+    const nodeId = `${nodeType}-${id}`;
+    console.log('Looking for node with ID:', nodeId, 'in', graph.nodes.length, 'nodes');
+    const node = graph.nodes.find(n => n.id === nodeId);
+    console.log('Found node:', node ? node.id : 'NOT FOUND');
+
+    if (node) {
+      // Clear previous history to avoid confusion
+      graph.history = [];
+
+      // Select the node in the graph
+      graph.selectedNode = node;
+
+      // Build set of related nodes (same logic as selectGraphNode but without history)
+      const relatedNodes = new Set();
+      const relatedLinks = new Set();
+      relatedNodes.add(node.id);
+
+      // Find all nodes connected to this node
+      graph.links.forEach(link => {
+        if (link.source.id === node.id) {
+          relatedNodes.add(link.target.id);
+          relatedLinks.add(link);
+        } else if (link.target.id === node.id) {
+          relatedNodes.add(link.source.id);
+          relatedLinks.add(link);
+        }
+      });
+
+      // Apply full chain tracing logic based on node type
+      if (node.type === 'group') {
+        const subChallenges = new Set();
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'group-challenge') {
+            subChallenges.add(link.target.id);
+          }
+        });
+
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (subChallenges.has(link.source.id) && link.type === 'challenge-initiative') {
+            initiativeNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+            systemNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'challenge') {
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'challenge-initiative') {
+            initiativeNodes.add(link.target.id);
+          }
+        });
+
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+            systemNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'initiative') {
+        const challengeNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'challenge-initiative') {
+            challengeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'initiative-system') {
+            systemNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'system') {
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'initiative-system') {
+            initiativeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const challengeNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+            challengeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'kpi') {
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'system-kpi') {
+            systemNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.target.id) && link.type === 'initiative-system') {
+            initiativeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const challengeNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+            challengeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+      }
+
+      graph.filteredNodes = relatedNodes;
+      graph.filteredLinks = relatedLinks;
+
+      layoutGraph();
+      drawGraph();
+      updateGraphUI();
+
+      // Automatically fit to view after syncing
+      setTimeout(() => {
+        graphFitToView();
+      }, 50);
+    } else {
+      console.log('Node not found in graph:', nodeType, id);
+    }
+  } finally {
+    console.log('syncColumnToGraphView - resetting isSyncing to FALSE');
+    isSyncing = false;
+  }
 }
 
 /* ========================================
