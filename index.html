@@ -2,18 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Navigate the case live: click any item to jump across - Data v1.0 - CISK Navigator v2.4.1</title>
-
-<!-- Analytics Tracking -->
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-3BZY5SSYTH"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-3BZY5SSYTH');
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Navigate the case live: click any item to jump across - Data v1.0 - CISK Navigator v2.5.3</title>
 
 <style>
   :root {
@@ -28,24 +18,24 @@
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
-    /* CISK Colors */
+    /* CISK Colors - Configurable via YAML */
     --c-challenge: #f0d24f;
-    --c-challenge-bg: rgba(240,210,79,.14);
-    --c-challenge-border: rgba(240,210,79,.55);
-    --c-challenge-light: rgba(240,210,79,.10);
+    --c-challenge-bg: #f0d24f23;
+    --c-challenge-border: #f0d24f8C;
+    --c-challenge-light: #f0d24f1A;
 
     --c-initiative: #8fd0ff;
-    --c-initiative-bg: rgba(143,208,255,.14);
-    --c-initiative-border: rgba(143,208,255,.55);
-    --c-initiative-light: rgba(143,208,255,.10);
+    --c-initiative-bg: #8fd0ff23;
+    --c-initiative-border: #8fd0ff8C;
+    --c-initiative-light: #8fd0ff1A;
 
     --c-system: #1d4ed8;
-    --c-system-bg: rgba(29,78,216,.12);
-    --c-system-border: rgba(29,78,216,.55);
+    --c-system-bg: #1d4ed81F;
+    --c-system-border: #1d4ed88C;
 
     --c-kpi: #22c55e;
-    --c-kpi-bg: rgba(34,197,94,.12);
-    --c-kpi-border: rgba(34,197,94,.55);
+    --c-kpi-bg: #22c55e1F;
+    --c-kpi-border: #22c55e8C;
 
     /* Priority Colors */
     --priority-high: #f59e0b;
@@ -391,7 +381,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Navigate the case live: click any item to jump across <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.4.0)</span></div>
+      <div class="title">Navigate the case live: click any item to jump across <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.5.3)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -522,16 +512,32 @@
           <div style="font-size:12px;"></div>
         </div>
       </div>
-      <div class="bd" style="padding:0;">
-        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;"></canvas>
+      <div class="bd" style="padding:0;position:relative;">
+        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <div id="graphTooltip" style="
+          position:absolute;
+          display:none;
+          background:rgba(16,26,48,0.95);
+          border:1px solid rgba(255,255,255,0.2);
+          border-radius:8px;
+          padding:8px 12px;
+          color:var(--text);
+          font-size:12px;
+          line-height:1.4;
+          pointer-events:none;
+          z-index:100;
+          max-width:300px;
+          box-shadow:0 4px 12px rgba(0,0,0,0.4);
+          backdrop-filter:blur(8px);
+        "></div>
       </div>
       <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
         <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#fbbf24;border-radius:4px;"></span> Groups</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#f0d24f;border-radius:4px;"></span> Sub-Challenges</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#8fd0ff;border-radius:4px;"></span> Initiatives</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1d4ed8;border-radius:4px;"></span> Systems</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:4px;"></span> KPIs</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--graph-group);border-radius:4px;"></span> Groups</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-challenge);border-radius:4px;"></span> Sub-Challenges</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-initiative);border-radius:4px;"></span> Initiatives</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-system);border-radius:4px;"></span> Systems</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-kpi);border-radius:4px;"></span> KPIs</div>
           <span class="muted">|</span>
           <div class="muted">Click any node to filter • Use ← Back to restore</div>
         </div>
@@ -543,7 +549,7 @@
 
 <script>
 // Data injected from Flask
-const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Digital Transformation"}, {"id": "C2", "number": 2, "priority": 1, "title": "Digital Architecture \u0026 Principles"}, {"id": "C3", "number": 3, "priority": 1, "title": "ERP Consolidation Strategy"}, {"id": "C4", "number": 4, "priority": 2, "title": "Operating Model \u0026 Governance"}, {"id": "C5", "number": 5, "priority": 1, "title": "Security \u0026 Compliance"}, {"id": "C6", "number": 6, "priority": 3, "title": "Risk \u0026 Mitigation"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC4", "impact": "L", "weight": 6}, {"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)", "season": "S1", "text": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "M", "weight": 6}], "id": "C1.I2", "raw": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)", "season": "S1", "text": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)", "season": "S2", "text": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 8}], "id": "C1.I4", "raw": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)", "season": "S2", "text": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "M", "weight": 9}], "id": "C1.I5", "raw": "Productise digital services (offers, pricing, portal; adoption KPIs)", "season": "S2", "text": "Productise digital services (offers, pricing, portal; adoption KPIs)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "L", "weight": 7}, {"challengeId": "C1.SC1", "impact": "H", "weight": 9}, {"challengeId": "C1.SC2", "impact": "M", "weight": 9}], "id": "C1.I6", "raw": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI", "season": "S3", "text": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "L", "weight": 5}], "id": "C2.I1", "raw": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)", "season": "S1", "text": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"}, {"challenges": [{"challengeId": "C2.SC6", "impact": "L", "weight": 5}], "id": "C2.I2", "raw": "Integration standards + platform selection (API/events, iPaaS)", "season": "S1", "text": "Integration standards + platform selection (API/events, iPaaS)"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 7}, {"challengeId": "C2.SC6", "impact": "L", "weight": 4}], "id": "C2.I3", "raw": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)", "season": "S1", "text": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 9}, {"challengeId": "C2.SC5", "impact": "M", "weight": 6}], "id": "C2.I4", "raw": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces", "season": "S2", "text": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "M", "weight": 8}, {"challengeId": "C2.SC2", "impact": "H", "weight": 7}], "id": "C2.I5", "raw": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)", "season": "S2", "text": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "H", "weight": 7}], "id": "C2.I6", "raw": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)", "season": "S2", "text": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC4", "impact": "M", "weight": 5}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I7", "raw": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)", "season": "S3", "text": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)"}, {"challenges": [{"challengeId": "C3.SC6", "impact": "M", "weight": 5}, {"challengeId": "C3.SC1", "impact": "H", "weight": 8}, {"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I1", "raw": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)", "season": "S1", "text": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I2", "raw": "Master data ownership + quality rules (harmonised)", "season": "S1", "text": "Master data ownership + quality rules (harmonised)"}, {"challenges": [{"challengeId": "C3.SC5", "impact": "M", "weight": 6}, {"challengeId": "C3.SC2", "impact": "M", "weight": 10}], "id": "C3.I3", "raw": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)", "season": "S1", "text": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "M", "weight": 7}, {"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I4", "raw": "S/4 pilot live + Finance value gate; first rollout waves launched", "season": "S2", "text": "S/4 pilot live + Finance value gate; first rollout waves launched"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 8}], "id": "C3.I5", "raw": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)", "season": "S1", "text": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 9}], "id": "C3.I6", "raw": "Complete waves + retire legacy; standard processes embedded", "season": "S3", "text": "Complete waves + retire legacy; standard processes embedded"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 10}, {"challengeId": "C4.SC3", "impact": "M", "weight": 7}], "id": "C4.I1", "raw": "Co\u2011owned Business/IT operating model (service + product/value partner)", "season": "S1", "text": "Co\u2011owned Business/IT operating model (service + product/value partner)"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 8}], "id": "C4.I2", "raw": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)", "season": "S1", "text": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I3", "raw": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)", "season": "S1", "text": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC1", "impact": "H", "weight": 9}, {"challengeId": "C4.SC6", "impact": "L", "weight": 7}], "id": "C4.I4", "raw": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)", "season": "S1", "text": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)"}, {"challenges": [{"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I5", "raw": "Right sourcing (outsource commodity ops; retain Competency Center)", "season": "S2", "text": "Right sourcing (outsource commodity ops; retain Competency Center)"}, {"challenges": [{"challengeId": "C4.SC6", "impact": "L", "weight": 6}, {"challengeId": "C4.SC3", "impact": "M", "weight": 4}], "id": "C4.I6", "raw": "Continuous improvement cadence (process mining / automation where justified)", "season": "S3", "text": "Continuous improvement cadence (process mining / automation where justified)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}, {"challengeId": "C5.SC2", "impact": "M", "weight": 4}], "id": "C5.I1", "raw": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)", "season": "S1", "text": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 7}, {"challengeId": "C5.SC4", "impact": "M", "weight": 6}], "id": "C5.I2", "raw": "Identity baseline incl. MFA + least privilege + JML + PAM", "season": "S1", "text": "Identity baseline incl. MFA + least privilege + JML + PAM"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}], "id": "C5.I3", "raw": "OT security baseline (segmentation, secure remote access, vuln routine)", "season": "S1", "text": "OT security baseline (segmentation, secure remote access, vuln routine)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "M", "weight": 6}, {"challengeId": "C5.SC1", "impact": "H", "weight": 6}], "id": "C5.I4", "raw": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)", "season": "S2", "text": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 5}, {"challengeId": "C5.SC5", "impact": "M", "weight": 7}, {"challengeId": "C5.SC6", "impact": "L", "weight": 7}], "id": "C5.I5", "raw": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)", "season": "S3", "text": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)"}, {"challenges": [{"challengeId": "C5.SC6", "impact": "H", "weight": 9}], "id": "C5.I6", "raw": "Security culture + vendor risk + audit drills", "season": "S1", "text": "Security culture + vendor risk + audit drills"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "L", "weight": 4}], "id": "C6.I1", "raw": "Standard vs local boundaries + exception governance", "season": "S1", "text": "Standard vs local boundaries + exception governance"}, {"challenges": [{"challengeId": "C6.SC4", "impact": "L", "weight": 6}], "id": "C6.I2", "raw": "Wave readiness gates + cutover/rollback playbook (plant-safe)", "season": "S1", "text": "Wave readiness gates + cutover/rollback playbook (plant-safe)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "M", "weight": 6}, {"challengeId": "C6.SC1", "impact": "L", "weight": 7}], "id": "C6.I3", "raw": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)", "season": "S1", "text": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "L", "weight": 5}], "id": "C6.I4", "raw": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)", "season": "S2", "text": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "M", "weight": 7}], "id": "C6.I5", "raw": "Vendor governance (SLAs, demos, health\u2011check, exit plan)", "season": "S2", "text": "Vendor governance (SLAs, demos, health\u2011check, exit plan)"}, {"challenges": [{"challengeId": "C6.SC1", "impact": "M", "weight": 7}, {"challengeId": "C6.SC2", "impact": "L", "weight": 4}], "id": "C6.I6", "raw": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan", "season": "S3", "text": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Lead time \u221215\u201320% (end\u2011to\u2011end, incl. engineering + supply)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 6}, {"systemId": "C1.S3", "weight": 8}], "text": "On-time delivery +5\u20138 percentage points (definition agreed)"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Inventory turns +10\u201315% + WIP aging reduced"}, {"id": "C1.K4", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Cost of poor quality (COPQ) \u221210% (scrap + rework + warranty)"}, {"id": "C1.K5", "systems": [{"systemId": "C1.S4", "weight": 7}, {"systemId": "C1.S1", "weight": 9}], "text": "Digital services revenue enabled +CHF 3\u20138m/year by Year 3"}, {"id": "C1.K6", "systems": [{"systemId": "C1.S3", "weight": 9}], "text": "Net value KPI: benefits vs (investment + run\u2011cost \u0394), Finance-signed quarterly"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 8}], "text": "Core simplification: ERP instances (3\u21921); CRM instances (3\u21921)"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S4", "weight": 7}, {"systemId": "C2.S3", "weight": 6}], "text": "Integration health: % interfaces via iPaaS/API (incl. OT); # point\u2011to\u2011point retired"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S2", "weight": 8}, {"systemId": "C2.S5", "weight": 7}], "text": "Data quality: master data accuracy/completeness; \u0027single version of truth\u0027 adoption"}, {"id": "C2.K4", "systems": [{"systemId": "C2.S3", "weight": 7}, {"systemId": "C2.S6", "weight": 9}], "text": "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"}, {"id": "C2.K5", "systems": [{"systemId": "C2.S5", "weight": 7}], "text": "Security coverage: MFA/PAM/logging coverage; OT segmentation \u0026 secure remote access compliance"}, {"id": "C2.K6", "systems": [{"systemId": "C2.S3", "weight": 8}], "text": "Delivery speed: time to onboard a new site/line/machine; change failure rate"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S5", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Consolidation: ERP cores \u2192 1; legacy systems retired per wave plan"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S4", "weight": 9}], "text": "Finance efficiency: close cycle time \u2193; manual reconciliations \u2193; auditability \u2191"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S4", "weight": 7}], "text": "Operational control: inventory accuracy \u2191; inventory turns +10\u201315%; WIP aging \u2193"}, {"id": "C3.K4", "systems": [{"systemId": "C3.S4", "weight": 6}, {"systemId": "C3.S2", "weight": 6}], "text": "Cost transparency: standard cost coverage \u2191; variance drill-down cycle \u2193"}, {"id": "C3.K5", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Service to the business: fewer workarounds; process compliance/adoption \u2191"}, {"id": "C3.K6", "systems": [{"systemId": "C3.S2", "weight": 9}], "text": "Cost control: programme burn rate vs budget; run-cost per user/ticket \u2193"}, {"id": "C4.K1", "systems": [{"systemId": "C4.S5", "weight": 8}, {"systemId": "C4.S1", "weight": 8}, {"systemId": "C4.S6", "weight": 8}], "text": "Stakeholder trust: IT NPS / satisfaction \u2191; fewer escalations"}, {"id": "C4.K2", "systems": [{"systemId": "C4.S3", "weight": 9}, {"systemId": "C4.S4", "weight": 7}], "text": "Delivery performance: % initiatives delivered on time/on value; cycle time idea\u2192release \u2193"}, {"id": "C4.K3", "systems": [{"systemId": "C4.S6", "weight": 9}, {"systemId": "C4.S2", "weight": 7}], "text": "Adoption: active usage, process compliance, training completion; Excel workarounds \u2193"}, {"id": "C4.K4", "systems": [{"systemId": "C4.S4", "weight": 6}], "text": "Run-cost optimisation: licences rationalised; cost per ticket \u2193; run-cost \u0394 tracked"}, {"id": "C4.K5", "systems": [{"systemId": "C4.S3", "weight": 10}, {"systemId": "C4.S4", "weight": 6}, {"systemId": "C4.S1", "weight": 7}], "text": "Governance effectiveness: decision cycle time \u2193; fewer uncontrolled exceptions"}, {"id": "C4.K6", "systems": [{"systemId": "C4.S1", "weight": 8}], "text": "Talent \u0026 culture: engagement \u2191; critical roles filled; attrition \u2193; capability coverage \u2191"}, {"id": "C5.K1", "systems": [{"systemId": "C5.S1", "weight": 9}, {"systemId": "C5.S2", "weight": 8}], "text": "MFA coverage (%) + % privileged accounts under PAM"}, {"id": "C5.K2", "systems": [{"systemId": "C5.S1", "weight": 9}], "text": "Vulnerability aging: % critical patched within SLA; OT compensating controls"}, {"id": "C5.K3", "systems": [{"systemId": "C5.S5", "weight": 8}, {"systemId": "C5.S3", "weight": 8}], "text": "MTTD and MTTR for security incidents (target \u2193)"}, {"id": "C5.K4", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S5", "weight": 6}], "text": "Phishing resilience: click rate \u2193; training completion \u2191"}, {"id": "C5.K5", "systems": [{"systemId": "C5.S2", "weight": 9}], "text": "Audit readiness: # major findings = 0; time to produce evidence \u2193"}, {"id": "C5.K6", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S6", "weight": 9}, {"systemId": "C5.S4", "weight": 9}], "text": "Resilience: backup restore success rate; RTO/RPO met in tests"}, {"id": "C6.K1", "systems": [{"systemId": "C6.S1", "weight": 9}, {"systemId": "C6.S6", "weight": 8}], "text": "Wave readiness score (% green) before go\u2011live; # waves delayed for readiness (ok)"}, {"id": "C6.K2", "systems": [{"systemId": "C6.S3", "weight": 9}, {"systemId": "C6.S2", "weight": 8}], "text": "Adoption: training completion; active users; process compliance rate"}, {"id": "C6.K3", "systems": [{"systemId": "C6.S5", "weight": 9}], "text": "Data quality score (master + transactional); inventory accuracy"}, {"id": "C6.K4", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Delivery health: schedule variance, milestone hit rate, change failure rate"}, {"id": "C6.K5", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Cost control: burn rate vs budget; run\u2011cost delta tracked"}, {"id": "C6.K6", "systems": [{"systemId": "C6.S1", "weight": 7}, {"systemId": "C6.S4", "weight": 9}], "text": "Operational stability: incident rate during/after releases; downtime minutes"}], "meta": {"generated": "2026-02-07T20:12:53.722795", "sourceDeck": "Navigate the case live: click any item to jump across"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Lead-time too long/variable across Order\u2192Engineering\u2192Supply\u2192Build"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "On-time delivery gaps; late surprises drive expediting \u0026 firefighting"}, {"groupId": "C1", "id": "C1.SC3", "priority": 3, "text": "Inventory/WIP buffers due to limited visibility \u0026 planning discipline"}, {"groupId": "C1", "id": "C1.SC4", "priority": 3, "text": "Cost transparency gaps (standard cost, variances, margin leakage)"}, {"groupId": "C1", "id": "C1.SC5", "priority": 3, "text": "Digital services not yet packaged/scaled (remote support, predictive)"}, {"groupId": "C1", "id": "C1.SC6", "priority": 1, "text": "Customer experience fragmented (3 CRMs); limited pipeline \u0026 service visibility; inconsistent customer master"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Fragmented landscape (multiple ERP/CRM instances; local solutions)"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Point\u2011to\u2011point integrations create fragility and high change cost"}, {"groupId": "C2", "id": "C2.SC3", "priority": 3, "text": "No single trusted data layer for plant-to-board decisions"}, {"groupId": "C2", "id": "C2.SC4", "priority": 3, "text": "OT/IT + IIoT constraints: segmented shop\u2011floor, sensor connectivity, uptime, safety, vendor access"}, {"groupId": "C2", "id": "C2.SC5", "priority": 2, "text": "Cloud + connectivity heterogeneity (incl. Wi\u2011Fi/5G); resilience \u0026 DR not uniform"}, {"groupId": "C2", "id": "C2.SC6", "priority": 3, "text": "Digital services scale needs secure connectivity + reusable patterns"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Multiple ERP cores (3 SAP instances) + local CN system + process variants \u2192 duplication \u0026 friction"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"}, {"groupId": "C3", "id": "C3.SC3", "priority": 3, "text": "Excel workarounds for planning, costing, reporting \u2192 slow decisions and errors"}, {"groupId": "C3", "id": "C3.SC4", "priority": 3, "text": "Limited end\u2011to\u2011end traceability across PLM \u2194 shop\u2011floor \u2194 quality \u2194 service"}, {"groupId": "C3", "id": "C3.SC5", "priority": 3, "text": "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"}, {"groupId": "C3", "id": "C3.SC6", "priority": 3, "text": "SAP program already in motion (partner likely selected) \u2192 need a health-check, not a restart"}, {"groupId": "C4", "id": "C4.SC1", "priority": 1, "text": "IT perceived as reactive; unclear ownership \u2192 slow delivery and \u0027firefighting\u0027"}, {"groupId": "C4", "id": "C4.SC2", "priority": 3, "text": "Decentralised divisions; low trust in group standards \u2192 resistance to harmonisation"}, {"groupId": "C4", "id": "C4.SC3", "priority": 3, "text": "Portfolio noise: no single intake/waterline \u2192 too many priorities at once"}, {"groupId": "C4", "id": "C4.SC4", "priority": 2, "text": "Change capacity constraints; training/adoption often under-funded"}, {"groupId": "C4", "id": "C4.SC5", "priority": 3, "text": "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"}, {"groupId": "C4", "id": "C4.SC6", "priority": 3, "text": "Business/IT misalignment: requirements and outcomes not co\u2011owned end\u2011to\u2011end"}, {"groupId": "C5", "id": "C5.SC1", "priority": 2, "text": "Expanded attack surface (cloud, remote access, supplier connections, IoT)"}, {"groupId": "C5", "id": "C5.SC2", "priority": 3, "text": "OT constraints + legacy devices \u2192 segmentation and patching are hard"}, {"groupId": "C5", "id": "C5.SC3", "priority": 2, "text": "Identity \u0026 privileged access sprawl; inconsistent access governance"}, {"groupId": "C5", "id": "C5.SC4", "priority": 3, "text": "Limited detection/response maturity (logging, SOC, incident routines)"}, {"groupId": "C5", "id": "C5.SC5", "priority": 3, "text": "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"}, {"groupId": "C5", "id": "C5.SC6", "priority": 2, "text": "Third\u2011party risk (partners, integrators) + SAP programme security gates"}, {"groupId": "C6", "id": "C6.SC1", "priority": 3, "text": "If divisions resist standardisation, benefits won\u0027t land (Excel/workarounds persist)"}, {"groupId": "C6", "id": "C6.SC2", "priority": 3, "text": "If data quality is weak, planning and inventory KPIs won\u0027t move"}, {"groupId": "C6", "id": "C6.SC3", "priority": 3, "text": "If we disrupt plants during cutovers, trust is lost and programme stalls"}, {"groupId": "C6", "id": "C6.SC4", "priority": 3, "text": "If scope/customisation grows, costs and timelines explode (clean core violated)"}, {"groupId": "C6", "id": "C6.SC5", "priority": 3, "text": "If vendors/partners under\u2011deliver, knowledge and control erode"}, {"groupId": "C6", "id": "C6.SC6", "priority": 2, "text": "If security/OT constraints are ignored, risk increases during transformation"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I6", "weight": 8}, {"initiativeId": "C1.I5", "weight": 9}], "text": "Core ERP (SAP S/4HANA as system of record)", "title": ""}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 5}], "text": "Planning cockpit (MRP exceptions / APS where needed)", "title": ""}, {"id": "C1.S3", "initiatives": [{"initiativeId": "C1.I3", "weight": 9}, {"initiativeId": "C1.I4", "weight": 9}, {"initiativeId": "C1.I1", "weight": 7}], "text": "MES / Quality execution (critical lines; traceability)", "title": ""}, {"id": "C1.S4", "initiatives": [{"initiativeId": "C1.I2", "weight": 9}], "text": "PLM + Engineering change control (ECR/ECO) integrated", "title": ""}, {"id": "C1.S5", "initiatives": [{"initiativeId": "C1.I1", "weight": 8}, {"initiativeId": "C1.I3", "weight": 9}], "text": "Enterprise data platform + KPI layer (BI, analytics, AI-ready)", "title": ""}, {"id": "C1.S6", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I5", "weight": 10}, {"initiativeId": "C1.I6", "weight": 9}, {"initiativeId": "C1.I3", "weight": 9}], "text": "CRM core (Salesforce 3\u21921) + customer portal + secure remote connectivity / IoT data capture", "title": ""}, {"bullets": ["CRM / sales workflows", "Customer portal", "Service experience"], "id": "C2.S1", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I7", "weight": 7}, {"initiativeId": "C2.I6", "weight": 8}], "text": "", "title": "Experience layer (CRM + customer portal + service)", "type": "system"}, {"bullets": ["Core ERP (SAP S/4HANA)", "PLM (engineering change)", "MES / Quality (shop\u2011floor execution)"], "id": "C2.S2", "initiatives": [{"initiativeId": "C2.I4", "weight": 9}], "text": "", "title": "Business core (standard backbone)", "type": "system"}, {"bullets": ["Finance", "HR", "Other corporate apps"], "id": "C2.S3", "initiatives": [{"initiativeId": "C2.I1", "weight": 7}, {"initiativeId": "C2.I2", "weight": 5}], "text": "", "title": "Corporate applications (Finance / HR / etc.)", "type": "system"}, {"bullets": ["API / integration platform (iPaaS)", "Events / pub\u2011sub", "OT / edge gateways (shop\u2011floor connectivity)"], "id": "C2.S4", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I4", "weight": 6}, {"initiativeId": "C2.I1", "weight": 6}], "text": "", "title": "Integration \u0026 event backbone", "type": "system"}, {"bullets": ["Enterprise data platform", "Historian / time\u2011series for OT", "KPI semantic layer", "BI / dashboards"], "id": "C2.S5", "initiatives": [{"initiativeId": "C2.I4", "weight": 8}, {"initiativeId": "C2.I2", "weight": 5}, {"initiativeId": "C2.I6", "weight": 6}, {"initiativeId": "C2.I3", "weight": 8}], "text": "", "title": "Data \u0026 analytics platform", "type": "system"}, {"bullets": ["Hybrid cloud", "Network (LAN / Wi\u2011Fi / 5G)", "OT zones / segmentation foundations", "Disaster recovery"], "id": "C2.S6", "initiatives": [{"initiativeId": "C2.I6", "weight": 5}], "text": "", "title": "Infrastructure foundation", "type": "system"}, {"bullets": ["Identity (MFA / access)", "Central logging / SIEM", "Zone model + monitoring", "Audit evidence"], "id": "C2.S7", "initiatives": [{"initiativeId": "C2.I6", "weight": 8}, {"initiativeId": "C2.I5", "weight": 7}, {"initiativeId": "C2.I1", "weight": 5}], "text": "", "title": "Security \u0026 identity (applies to all layers)", "type": "system"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I3", "weight": 10}, {"initiativeId": "C3.I6", "weight": 9}, {"initiativeId": "C3.I4", "weight": 10}], "text": "SAP S/4HANA as digital core + \u0027clean core\u0027 guardrails (standard first)", "title": ""}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I4", "weight": 5}, {"initiativeId": "C3.I6", "weight": 8}, {"initiativeId": "C3.I2", "weight": 7}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Master data governance \u0026 tooling (workflows, validation, ownership/RACI)", "title": ""}, {"id": "C3.S3", "initiatives": [{"initiativeId": "C3.I3", "weight": 5}, {"initiativeId": "C3.I6", "weight": 5}, {"initiativeId": "C3.I2", "weight": 8}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Integration platform (iPaaS/API/events) + retire point\u2011to\u2011point interfaces", "title": ""}, {"id": "C3.S4", "initiatives": [{"initiativeId": "C3.I3", "weight": 7}], "text": "MES/QMS integration on critical lines to unlock traceability \u0026 COPQ reduction", "title": ""}, {"id": "C3.S5", "initiatives": [{"initiativeId": "C3.I4", "weight": 8}], "text": "Delivery factory: testing, cutover runbooks, rehearsals, training \u0026 hypercare", "title": ""}, {"id": "C3.S6", "initiatives": [{"initiativeId": "C3.I6", "weight": 6}, {"initiativeId": "C3.I5", "weight": 7}], "text": "Partner model + retained Competency Center (architecture, data, security, vendor governance)", "title": ""}, {"id": "C4.S1", "initiatives": [{"initiativeId": "C4.I6", "weight": 5}], "text": "Executive governance: ExCo steering + quarterly value gates + decision log", "title": ""}, {"id": "C4.S2", "initiatives": [{"initiativeId": "C4.I5", "weight": 5}], "text": "Digital investment framework: categories, scoring, waterline, benefits tracking", "title": ""}, {"id": "C4.S3", "initiatives": [{"initiativeId": "C4.I6", "weight": 10}, {"initiativeId": "C4.I1", "weight": 8}, {"initiativeId": "C4.I4", "weight": 10}], "text": "Product \u0026 process ownership (ERP / Data / Security / Service) + RACI", "title": ""}, {"id": "C4.S4", "initiatives": [{"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I6", "weight": 6}], "text": "Service operations system: ITSM + service catalogue + SLA dashboards; \u0027runner/repeater/stranger\u0027 support tiers", "title": ""}, {"id": "C4.S5", "initiatives": [{"initiativeId": "C4.I5", "weight": 8}, {"initiativeId": "C4.I6", "weight": 6}, {"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I4", "weight": 5}], "text": "Vendor \u0026 partner governance: managed services towers, SLAs, KPI dashboards, escalation paths", "title": ""}, {"id": "C4.S6", "initiatives": [{"initiativeId": "C4.I4", "weight": 6}, {"initiativeId": "C4.I2", "weight": 8}], "text": "People \u0026 change system: change champions, training academy, incentives, role upgrades (PO, data owners)", "title": ""}, {"id": "C5.S1", "initiatives": [{"initiativeId": "C5.I1", "weight": 7}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I3", "weight": 8}, {"initiativeId": "C5.I6", "weight": 7}], "text": "MFA / Identity platform (SSO, conditional access)", "title": ""}, {"id": "C5.S2", "initiatives": [{"initiativeId": "C5.I1", "weight": 8}, {"initiativeId": "C5.I5", "weight": 7}], "text": "PAM (privileged vault, session recording)", "title": ""}, {"id": "C5.S3", "initiatives": [{"initiativeId": "C5.I5", "weight": 5}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I4", "weight": 6}, {"initiativeId": "C5.I3", "weight": 5}], "text": "Endpoint protection (EDR) + device hygiene / patch tooling", "title": ""}, {"id": "C5.S4", "initiatives": [{"initiativeId": "C5.I3", "weight": 7}], "text": "Central logging + SIEM/SOAR + SOC (managed where useful)", "title": ""}, {"id": "C5.S5", "initiatives": [{"initiativeId": "C5.I6", "weight": 6}, {"initiativeId": "C5.I2", "weight": 7}], "text": "Network segmentation (IT/OT zones), firewalls, secure remote access", "title": ""}, {"id": "C5.S6", "initiatives": [{"initiativeId": "C5.I4", "weight": 5}], "text": "Resilience: backup/DR, immutable backups, recovery testing", "title": ""}, {"id": "C6.S1", "initiatives": [{"initiativeId": "C6.I3", "weight": 8}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Programme control tower: PMO + risk register + decision log", "title": ""}, {"id": "C6.S2", "initiatives": [{"initiativeId": "C6.I4", "weight": 10}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Wave readiness scorecard + go/no\u2011go forum", "title": ""}, {"id": "C6.S3", "initiatives": [{"initiativeId": "C6.I4", "weight": 8}, {"initiativeId": "C6.I5", "weight": 6}], "text": "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model", "title": ""}, {"id": "C6.S4", "initiatives": [{"initiativeId": "C6.I1", "weight": 6}], "text": "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack", "title": ""}, {"id": "C6.S5", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I6", "weight": 7}], "text": "Data governance system (owners, quality rules, stewardship tooling)", "title": ""}, {"id": "C6.S6", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I5", "weight": 5}, {"initiativeId": "C6.I3", "weight": 6}, {"initiativeId": "C6.I2", "weight": 7}], "text": "Partner performance dashboard + escalation paths (internal Competency Center)", "title": ""}]};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Digital Transformation"}, {"id": "C2", "number": 2, "priority": 1, "title": "Digital Architecture \u0026 Principles"}, {"id": "C3", "number": 3, "priority": 1, "title": "ERP Consolidation Strategy"}, {"id": "C4", "number": 4, "priority": 2, "title": "Operating Model \u0026 Governance"}, {"id": "C5", "number": 5, "priority": 1, "title": "Security \u0026 Compliance"}, {"id": "C6", "number": 6, "priority": 3, "title": "Risk \u0026 Mitigation"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC4", "impact": "L", "weight": 6}, {"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)", "season": "S1", "text": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "M", "weight": 6}], "id": "C1.I2", "raw": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)", "season": "S1", "text": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)", "season": "S2", "text": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 8}], "id": "C1.I4", "raw": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)", "season": "S2", "text": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "M", "weight": 9}], "id": "C1.I5", "raw": "Productise digital services (offers, pricing, portal; adoption KPIs)", "season": "S2", "text": "Productise digital services (offers, pricing, portal; adoption KPIs)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "L", "weight": 7}, {"challengeId": "C1.SC1", "impact": "H", "weight": 9}, {"challengeId": "C1.SC2", "impact": "M", "weight": 9}], "id": "C1.I6", "raw": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI", "season": "S3", "text": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "L", "weight": 5}], "id": "C2.I1", "raw": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)", "season": "S1", "text": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"}, {"challenges": [{"challengeId": "C2.SC6", "impact": "L", "weight": 5}], "id": "C2.I2", "raw": "Integration standards + platform selection (API/events, iPaaS)", "season": "S1", "text": "Integration standards + platform selection (API/events, iPaaS)"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 7}, {"challengeId": "C2.SC6", "impact": "L", "weight": 4}], "id": "C2.I3", "raw": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)", "season": "S1", "text": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 9}, {"challengeId": "C2.SC5", "impact": "M", "weight": 6}], "id": "C2.I4", "raw": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces", "season": "S2", "text": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "M", "weight": 8}, {"challengeId": "C2.SC2", "impact": "H", "weight": 7}], "id": "C2.I5", "raw": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)", "season": "S2", "text": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "H", "weight": 7}], "id": "C2.I6", "raw": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)", "season": "S2", "text": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC4", "impact": "M", "weight": 5}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I7", "raw": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)", "season": "S3", "text": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)"}, {"challenges": [{"challengeId": "C3.SC6", "impact": "M", "weight": 5}, {"challengeId": "C3.SC1", "impact": "H", "weight": 8}, {"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I1", "raw": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)", "season": "S1", "text": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I2", "raw": "Master data ownership + quality rules (harmonised)", "season": "S1", "text": "Master data ownership + quality rules (harmonised)"}, {"challenges": [{"challengeId": "C3.SC5", "impact": "M", "weight": 6}, {"challengeId": "C3.SC2", "impact": "M", "weight": 10}], "id": "C3.I3", "raw": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)", "season": "S1", "text": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "M", "weight": 7}, {"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I4", "raw": "S/4 pilot live + Finance value gate; first rollout waves launched", "season": "S2", "text": "S/4 pilot live + Finance value gate; first rollout waves launched"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 8}], "id": "C3.I5", "raw": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)", "season": "S1", "text": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 9}], "id": "C3.I6", "raw": "Complete waves + retire legacy; standard processes embedded", "season": "S3", "text": "Complete waves + retire legacy; standard processes embedded"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 10}, {"challengeId": "C4.SC3", "impact": "M", "weight": 7}], "id": "C4.I1", "raw": "Co\u2011owned Business/IT operating model (service + product/value partner)", "season": "S1", "text": "Co\u2011owned Business/IT operating model (service + product/value partner)"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 8}], "id": "C4.I2", "raw": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)", "season": "S1", "text": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I3", "raw": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)", "season": "S1", "text": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC1", "impact": "H", "weight": 9}, {"challengeId": "C4.SC6", "impact": "L", "weight": 7}], "id": "C4.I4", "raw": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)", "season": "S1", "text": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)"}, {"challenges": [{"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I5", "raw": "Right sourcing (outsource commodity ops; retain Competency Center)", "season": "S2", "text": "Right sourcing (outsource commodity ops; retain Competency Center)"}, {"challenges": [{"challengeId": "C4.SC6", "impact": "L", "weight": 6}, {"challengeId": "C4.SC3", "impact": "M", "weight": 4}], "id": "C4.I6", "raw": "Continuous improvement cadence (process mining / automation where justified)", "season": "S3", "text": "Continuous improvement cadence (process mining / automation where justified)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}, {"challengeId": "C5.SC2", "impact": "M", "weight": 4}], "id": "C5.I1", "raw": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)", "season": "S1", "text": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 7}, {"challengeId": "C5.SC4", "impact": "M", "weight": 6}], "id": "C5.I2", "raw": "Identity baseline incl. MFA + least privilege + JML + PAM", "season": "S1", "text": "Identity baseline incl. MFA + least privilege + JML + PAM"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}], "id": "C5.I3", "raw": "OT security baseline (segmentation, secure remote access, vuln routine)", "season": "S1", "text": "OT security baseline (segmentation, secure remote access, vuln routine)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "M", "weight": 6}, {"challengeId": "C5.SC1", "impact": "H", "weight": 6}], "id": "C5.I4", "raw": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)", "season": "S2", "text": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 5}, {"challengeId": "C5.SC5", "impact": "M", "weight": 7}, {"challengeId": "C5.SC6", "impact": "L", "weight": 7}], "id": "C5.I5", "raw": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)", "season": "S3", "text": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)"}, {"challenges": [{"challengeId": "C5.SC6", "impact": "H", "weight": 9}], "id": "C5.I6", "raw": "Security culture + vendor risk + audit drills", "season": "S1", "text": "Security culture + vendor risk + audit drills"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "L", "weight": 4}], "id": "C6.I1", "raw": "Standard vs local boundaries + exception governance", "season": "S1", "text": "Standard vs local boundaries + exception governance"}, {"challenges": [{"challengeId": "C6.SC4", "impact": "L", "weight": 6}], "id": "C6.I2", "raw": "Wave readiness gates + cutover/rollback playbook (plant-safe)", "season": "S1", "text": "Wave readiness gates + cutover/rollback playbook (plant-safe)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "M", "weight": 6}, {"challengeId": "C6.SC1", "impact": "L", "weight": 7}], "id": "C6.I3", "raw": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)", "season": "S1", "text": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "L", "weight": 5}], "id": "C6.I4", "raw": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)", "season": "S2", "text": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "M", "weight": 7}], "id": "C6.I5", "raw": "Vendor governance (SLAs, demos, health\u2011check, exit plan)", "season": "S2", "text": "Vendor governance (SLAs, demos, health\u2011check, exit plan)"}, {"challenges": [{"challengeId": "C6.SC1", "impact": "M", "weight": 7}, {"challengeId": "C6.SC2", "impact": "L", "weight": 4}], "id": "C6.I6", "raw": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan", "season": "S3", "text": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Lead time \u221215\u201320% (end\u2011to\u2011end, incl. engineering + supply)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 6}, {"systemId": "C1.S3", "weight": 8}], "text": "On-time delivery +5\u20138 percentage points (definition agreed)"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Inventory turns +10\u201315% + WIP aging reduced"}, {"id": "C1.K4", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Cost of poor quality (COPQ) \u221210% (scrap + rework + warranty)"}, {"id": "C1.K5", "systems": [{"systemId": "C1.S4", "weight": 7}, {"systemId": "C1.S1", "weight": 9}], "text": "Digital services revenue enabled +CHF 3\u20138m/year by Year 3"}, {"id": "C1.K6", "systems": [{"systemId": "C1.S3", "weight": 9}], "text": "Net value KPI: benefits vs (investment + run\u2011cost \u0394), Finance-signed quarterly"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 8}], "text": "Core simplification: ERP instances (3\u21921); CRM instances (3\u21921)"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S4", "weight": 7}, {"systemId": "C2.S3", "weight": 6}], "text": "Integration health: % interfaces via iPaaS/API (incl. OT); # point\u2011to\u2011point retired"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S2", "weight": 8}, {"systemId": "C2.S5", "weight": 7}], "text": "Data quality: master data accuracy/completeness; \u0027single version of truth\u0027 adoption"}, {"id": "C2.K4", "systems": [{"systemId": "C2.S3", "weight": 7}, {"systemId": "C2.S6", "weight": 9}], "text": "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"}, {"id": "C2.K5", "systems": [{"systemId": "C2.S5", "weight": 7}], "text": "Security coverage: MFA/PAM/logging coverage; OT segmentation \u0026 secure remote access compliance"}, {"id": "C2.K6", "systems": [{"systemId": "C2.S3", "weight": 8}], "text": "Delivery speed: time to onboard a new site/line/machine; change failure rate"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S5", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Consolidation: ERP cores \u2192 1; legacy systems retired per wave plan"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S4", "weight": 9}], "text": "Finance efficiency: close cycle time \u2193; manual reconciliations \u2193; auditability \u2191"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S4", "weight": 7}], "text": "Operational control: inventory accuracy \u2191; inventory turns +10\u201315%; WIP aging \u2193"}, {"id": "C3.K4", "systems": [{"systemId": "C3.S4", "weight": 6}, {"systemId": "C3.S2", "weight": 6}], "text": "Cost transparency: standard cost coverage \u2191; variance drill-down cycle \u2193"}, {"id": "C3.K5", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Service to the business: fewer workarounds; process compliance/adoption \u2191"}, {"id": "C3.K6", "systems": [{"systemId": "C3.S2", "weight": 9}], "text": "Cost control: programme burn rate vs budget; run-cost per user/ticket \u2193"}, {"id": "C4.K1", "systems": [{"systemId": "C4.S5", "weight": 8}, {"systemId": "C4.S1", "weight": 8}, {"systemId": "C4.S6", "weight": 8}], "text": "Stakeholder trust: IT NPS / satisfaction \u2191; fewer escalations"}, {"id": "C4.K2", "systems": [{"systemId": "C4.S3", "weight": 9}, {"systemId": "C4.S4", "weight": 7}], "text": "Delivery performance: % initiatives delivered on time/on value; cycle time idea\u2192release \u2193"}, {"id": "C4.K3", "systems": [{"systemId": "C4.S6", "weight": 9}, {"systemId": "C4.S2", "weight": 7}], "text": "Adoption: active usage, process compliance, training completion; Excel workarounds \u2193"}, {"id": "C4.K4", "systems": [{"systemId": "C4.S4", "weight": 6}], "text": "Run-cost optimisation: licences rationalised; cost per ticket \u2193; run-cost \u0394 tracked"}, {"id": "C4.K5", "systems": [{"systemId": "C4.S3", "weight": 10}, {"systemId": "C4.S4", "weight": 6}, {"systemId": "C4.S1", "weight": 7}], "text": "Governance effectiveness: decision cycle time \u2193; fewer uncontrolled exceptions"}, {"id": "C4.K6", "systems": [{"systemId": "C4.S1", "weight": 8}], "text": "Talent \u0026 culture: engagement \u2191; critical roles filled; attrition \u2193; capability coverage \u2191"}, {"id": "C5.K1", "systems": [{"systemId": "C5.S1", "weight": 9}, {"systemId": "C5.S2", "weight": 8}], "text": "MFA coverage (%) + % privileged accounts under PAM"}, {"id": "C5.K2", "systems": [{"systemId": "C5.S1", "weight": 9}], "text": "Vulnerability aging: % critical patched within SLA; OT compensating controls"}, {"id": "C5.K3", "systems": [{"systemId": "C5.S5", "weight": 8}, {"systemId": "C5.S3", "weight": 8}], "text": "MTTD and MTTR for security incidents (target \u2193)"}, {"id": "C5.K4", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S5", "weight": 6}], "text": "Phishing resilience: click rate \u2193; training completion \u2191"}, {"id": "C5.K5", "systems": [{"systemId": "C5.S2", "weight": 9}], "text": "Audit readiness: # major findings = 0; time to produce evidence \u2193"}, {"id": "C5.K6", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S6", "weight": 9}, {"systemId": "C5.S4", "weight": 9}], "text": "Resilience: backup restore success rate; RTO/RPO met in tests"}, {"id": "C6.K1", "systems": [{"systemId": "C6.S1", "weight": 9}, {"systemId": "C6.S6", "weight": 8}], "text": "Wave readiness score (% green) before go\u2011live; # waves delayed for readiness (ok)"}, {"id": "C6.K2", "systems": [{"systemId": "C6.S3", "weight": 9}, {"systemId": "C6.S2", "weight": 8}], "text": "Adoption: training completion; active users; process compliance rate"}, {"id": "C6.K3", "systems": [{"systemId": "C6.S5", "weight": 9}], "text": "Data quality score (master + transactional); inventory accuracy"}, {"id": "C6.K4", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Delivery health: schedule variance, milestone hit rate, change failure rate"}, {"id": "C6.K5", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Cost control: burn rate vs budget; run\u2011cost delta tracked"}, {"id": "C6.K6", "systems": [{"systemId": "C6.S1", "weight": 7}, {"systemId": "C6.S4", "weight": 9}], "text": "Operational stability: incident rate during/after releases; downtime minutes"}], "meta": {"generated": "2026-02-09T12:09:03.641569", "sourceDeck": "Navigate the case live: click any item to jump across"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Lead-time too long/variable across Order\u2192Engineering\u2192Supply\u2192Build"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "On-time delivery gaps; late surprises drive expediting \u0026 firefighting"}, {"groupId": "C1", "id": "C1.SC3", "priority": 3, "text": "Inventory/WIP buffers due to limited visibility \u0026 planning discipline"}, {"groupId": "C1", "id": "C1.SC4", "priority": 3, "text": "Cost transparency gaps (standard cost, variances, margin leakage)"}, {"groupId": "C1", "id": "C1.SC5", "priority": 3, "text": "Digital services not yet packaged/scaled (remote support, predictive)"}, {"groupId": "C1", "id": "C1.SC6", "priority": 1, "text": "Customer experience fragmented (3 CRMs); limited pipeline \u0026 service visibility; inconsistent customer master"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Fragmented landscape (multiple ERP/CRM instances; local solutions)"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Point\u2011to\u2011point integrations create fragility and high change cost"}, {"groupId": "C2", "id": "C2.SC3", "priority": 3, "text": "No single trusted data layer for plant-to-board decisions"}, {"groupId": "C2", "id": "C2.SC4", "priority": 3, "text": "OT/IT + IIoT constraints: segmented shop\u2011floor, sensor connectivity, uptime, safety, vendor access"}, {"groupId": "C2", "id": "C2.SC5", "priority": 2, "text": "Cloud + connectivity heterogeneity (incl. Wi\u2011Fi/5G); resilience \u0026 DR not uniform"}, {"groupId": "C2", "id": "C2.SC6", "priority": 3, "text": "Digital services scale needs secure connectivity + reusable patterns"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Multiple ERP cores (3 SAP instances) + local CN system + process variants \u2192 duplication \u0026 friction"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"}, {"groupId": "C3", "id": "C3.SC3", "priority": 3, "text": "Excel workarounds for planning, costing, reporting \u2192 slow decisions and errors"}, {"groupId": "C3", "id": "C3.SC4", "priority": 3, "text": "Limited end\u2011to\u2011end traceability across PLM \u2194 shop\u2011floor \u2194 quality \u2194 service"}, {"groupId": "C3", "id": "C3.SC5", "priority": 3, "text": "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"}, {"groupId": "C3", "id": "C3.SC6", "priority": 3, "text": "SAP program already in motion (partner likely selected) \u2192 need a health-check, not a restart"}, {"groupId": "C4", "id": "C4.SC1", "priority": 1, "text": "IT perceived as reactive; unclear ownership \u2192 slow delivery and \u0027firefighting\u0027"}, {"groupId": "C4", "id": "C4.SC2", "priority": 3, "text": "Decentralised divisions; low trust in group standards \u2192 resistance to harmonisation"}, {"groupId": "C4", "id": "C4.SC3", "priority": 3, "text": "Portfolio noise: no single intake/waterline \u2192 too many priorities at once"}, {"groupId": "C4", "id": "C4.SC4", "priority": 2, "text": "Change capacity constraints; training/adoption often under-funded"}, {"groupId": "C4", "id": "C4.SC5", "priority": 3, "text": "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"}, {"groupId": "C4", "id": "C4.SC6", "priority": 3, "text": "Business/IT misalignment: requirements and outcomes not co\u2011owned end\u2011to\u2011end"}, {"groupId": "C5", "id": "C5.SC1", "priority": 2, "text": "Expanded attack surface (cloud, remote access, supplier connections, IoT)"}, {"groupId": "C5", "id": "C5.SC2", "priority": 3, "text": "OT constraints + legacy devices \u2192 segmentation and patching are hard"}, {"groupId": "C5", "id": "C5.SC3", "priority": 2, "text": "Identity \u0026 privileged access sprawl; inconsistent access governance"}, {"groupId": "C5", "id": "C5.SC4", "priority": 3, "text": "Limited detection/response maturity (logging, SOC, incident routines)"}, {"groupId": "C5", "id": "C5.SC5", "priority": 3, "text": "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"}, {"groupId": "C5", "id": "C5.SC6", "priority": 2, "text": "Third\u2011party risk (partners, integrators) + SAP programme security gates"}, {"groupId": "C6", "id": "C6.SC1", "priority": 3, "text": "If divisions resist standardisation, benefits won\u0027t land (Excel/workarounds persist)"}, {"groupId": "C6", "id": "C6.SC2", "priority": 3, "text": "If data quality is weak, planning and inventory KPIs won\u0027t move"}, {"groupId": "C6", "id": "C6.SC3", "priority": 3, "text": "If we disrupt plants during cutovers, trust is lost and programme stalls"}, {"groupId": "C6", "id": "C6.SC4", "priority": 3, "text": "If scope/customisation grows, costs and timelines explode (clean core violated)"}, {"groupId": "C6", "id": "C6.SC5", "priority": 3, "text": "If vendors/partners under\u2011deliver, knowledge and control erode"}, {"groupId": "C6", "id": "C6.SC6", "priority": 2, "text": "If security/OT constraints are ignored, risk increases during transformation"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I6", "weight": 8}, {"initiativeId": "C1.I5", "weight": 9}], "text": "Core ERP (SAP S/4HANA as system of record)", "title": ""}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 5}], "text": "Planning cockpit (MRP exceptions / APS where needed)", "title": ""}, {"id": "C1.S3", "initiatives": [{"initiativeId": "C1.I3", "weight": 9}, {"initiativeId": "C1.I4", "weight": 9}, {"initiativeId": "C1.I1", "weight": 7}], "text": "MES / Quality execution (critical lines; traceability)", "title": ""}, {"id": "C1.S4", "initiatives": [{"initiativeId": "C1.I2", "weight": 9}], "text": "PLM + Engineering change control (ECR/ECO) integrated", "title": ""}, {"id": "C1.S5", "initiatives": [{"initiativeId": "C1.I1", "weight": 8}, {"initiativeId": "C1.I3", "weight": 9}], "text": "Enterprise data platform + KPI layer (BI, analytics, AI-ready)", "title": ""}, {"id": "C1.S6", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I5", "weight": 10}, {"initiativeId": "C1.I6", "weight": 9}, {"initiativeId": "C1.I3", "weight": 9}], "text": "CRM core (Salesforce 3\u21921) + customer portal + secure remote connectivity / IoT data capture", "title": ""}, {"bullets": ["CRM / sales workflows", "Customer portal", "Service experience"], "id": "C2.S1", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I7", "weight": 7}, {"initiativeId": "C2.I6", "weight": 8}], "text": "", "title": "Experience layer (CRM + customer portal + service)", "type": "system"}, {"bullets": ["Core ERP (SAP S/4HANA)", "PLM (engineering change)", "MES / Quality (shop\u2011floor execution)"], "id": "C2.S2", "initiatives": [{"initiativeId": "C2.I4", "weight": 9}], "text": "", "title": "Business core (standard backbone)", "type": "system"}, {"bullets": ["Finance", "HR", "Other corporate apps"], "id": "C2.S3", "initiatives": [{"initiativeId": "C2.I1", "weight": 7}, {"initiativeId": "C2.I2", "weight": 5}], "text": "", "title": "Corporate applications (Finance / HR / etc.)", "type": "system"}, {"bullets": ["API / integration platform (iPaaS)", "Events / pub\u2011sub", "OT / edge gateways (shop\u2011floor connectivity)"], "id": "C2.S4", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I4", "weight": 6}, {"initiativeId": "C2.I1", "weight": 6}], "text": "", "title": "Integration \u0026 event backbone", "type": "system"}, {"bullets": ["Enterprise data platform", "Historian / time\u2011series for OT", "KPI semantic layer", "BI / dashboards"], "id": "C2.S5", "initiatives": [{"initiativeId": "C2.I4", "weight": 8}, {"initiativeId": "C2.I2", "weight": 5}, {"initiativeId": "C2.I6", "weight": 6}, {"initiativeId": "C2.I3", "weight": 8}], "text": "", "title": "Data \u0026 analytics platform", "type": "system"}, {"bullets": ["Hybrid cloud", "Network (LAN / Wi\u2011Fi / 5G)", "OT zones / segmentation foundations", "Disaster recovery"], "id": "C2.S6", "initiatives": [{"initiativeId": "C2.I6", "weight": 5}], "text": "", "title": "Infrastructure foundation", "type": "system"}, {"bullets": ["Identity (MFA / access)", "Central logging / SIEM", "Zone model + monitoring", "Audit evidence"], "id": "C2.S7", "initiatives": [{"initiativeId": "C2.I6", "weight": 8}, {"initiativeId": "C2.I5", "weight": 7}, {"initiativeId": "C2.I1", "weight": 5}], "text": "", "title": "Security \u0026 identity (applies to all layers)", "type": "system"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I3", "weight": 10}, {"initiativeId": "C3.I6", "weight": 9}, {"initiativeId": "C3.I4", "weight": 10}], "text": "SAP S/4HANA as digital core + \u0027clean core\u0027 guardrails (standard first)", "title": ""}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I4", "weight": 5}, {"initiativeId": "C3.I6", "weight": 8}, {"initiativeId": "C3.I2", "weight": 7}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Master data governance \u0026 tooling (workflows, validation, ownership/RACI)", "title": ""}, {"id": "C3.S3", "initiatives": [{"initiativeId": "C3.I3", "weight": 5}, {"initiativeId": "C3.I6", "weight": 5}, {"initiativeId": "C3.I2", "weight": 8}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Integration platform (iPaaS/API/events) + retire point\u2011to\u2011point interfaces", "title": ""}, {"id": "C3.S4", "initiatives": [{"initiativeId": "C3.I3", "weight": 7}], "text": "MES/QMS integration on critical lines to unlock traceability \u0026 COPQ reduction", "title": ""}, {"id": "C3.S5", "initiatives": [{"initiativeId": "C3.I4", "weight": 8}], "text": "Delivery factory: testing, cutover runbooks, rehearsals, training \u0026 hypercare", "title": ""}, {"id": "C3.S6", "initiatives": [{"initiativeId": "C3.I6", "weight": 6}, {"initiativeId": "C3.I5", "weight": 7}], "text": "Partner model + retained Competency Center (architecture, data, security, vendor governance)", "title": ""}, {"id": "C4.S1", "initiatives": [{"initiativeId": "C4.I6", "weight": 5}], "text": "Executive governance: ExCo steering + quarterly value gates + decision log", "title": ""}, {"id": "C4.S2", "initiatives": [{"initiativeId": "C4.I5", "weight": 5}], "text": "Digital investment framework: categories, scoring, waterline, benefits tracking", "title": ""}, {"id": "C4.S3", "initiatives": [{"initiativeId": "C4.I6", "weight": 10}, {"initiativeId": "C4.I1", "weight": 8}, {"initiativeId": "C4.I4", "weight": 10}], "text": "Product \u0026 process ownership (ERP / Data / Security / Service) + RACI", "title": ""}, {"id": "C4.S4", "initiatives": [{"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I6", "weight": 6}], "text": "Service operations system: ITSM + service catalogue + SLA dashboards; \u0027runner/repeater/stranger\u0027 support tiers", "title": ""}, {"id": "C4.S5", "initiatives": [{"initiativeId": "C4.I5", "weight": 8}, {"initiativeId": "C4.I6", "weight": 6}, {"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I4", "weight": 5}], "text": "Vendor \u0026 partner governance: managed services towers, SLAs, KPI dashboards, escalation paths", "title": ""}, {"id": "C4.S6", "initiatives": [{"initiativeId": "C4.I4", "weight": 6}, {"initiativeId": "C4.I2", "weight": 8}], "text": "People \u0026 change system: change champions, training academy, incentives, role upgrades (PO, data owners)", "title": ""}, {"id": "C5.S1", "initiatives": [{"initiativeId": "C5.I1", "weight": 7}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I3", "weight": 8}, {"initiativeId": "C5.I6", "weight": 7}], "text": "MFA / Identity platform (SSO, conditional access)", "title": ""}, {"id": "C5.S2", "initiatives": [{"initiativeId": "C5.I1", "weight": 8}, {"initiativeId": "C5.I5", "weight": 7}], "text": "PAM (privileged vault, session recording)", "title": ""}, {"id": "C5.S3", "initiatives": [{"initiativeId": "C5.I5", "weight": 5}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I4", "weight": 6}, {"initiativeId": "C5.I3", "weight": 5}], "text": "Endpoint protection (EDR) + device hygiene / patch tooling", "title": ""}, {"id": "C5.S4", "initiatives": [{"initiativeId": "C5.I3", "weight": 7}], "text": "Central logging + SIEM/SOAR + SOC (managed where useful)", "title": ""}, {"id": "C5.S5", "initiatives": [{"initiativeId": "C5.I6", "weight": 6}, {"initiativeId": "C5.I2", "weight": 7}], "text": "Network segmentation (IT/OT zones), firewalls, secure remote access", "title": ""}, {"id": "C5.S6", "initiatives": [{"initiativeId": "C5.I4", "weight": 5}], "text": "Resilience: backup/DR, immutable backups, recovery testing", "title": ""}, {"id": "C6.S1", "initiatives": [{"initiativeId": "C6.I3", "weight": 8}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Programme control tower: PMO + risk register + decision log", "title": ""}, {"id": "C6.S2", "initiatives": [{"initiativeId": "C6.I4", "weight": 10}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Wave readiness scorecard + go/no\u2011go forum", "title": ""}, {"id": "C6.S3", "initiatives": [{"initiativeId": "C6.I4", "weight": 8}, {"initiativeId": "C6.I5", "weight": 6}], "text": "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model", "title": ""}, {"id": "C6.S4", "initiatives": [{"initiativeId": "C6.I1", "weight": 6}], "text": "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack", "title": ""}, {"id": "C6.S5", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I6", "weight": 7}], "text": "Data governance system (owners, quality rules, stewardship tooling)", "title": ""}, {"id": "C6.S6", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I5", "weight": 5}, {"initiativeId": "C6.I3", "weight": 6}, {"initiativeId": "C6.I2", "weight": 7}], "text": "Partner performance dashboard + escalation paths (internal Competency Center)", "title": ""}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},
@@ -1920,6 +1926,19 @@ let graph = {
   history: []          // Navigation history stack for back button
 };
 
+// Get colors from CSS variables
+function getColor(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+const COLORS = {
+  group: getColor('--graph-group'),
+  challenge: getColor('--c-challenge'),
+  initiative: getColor('--c-initiative'),
+  system: getColor('--c-system'),
+  kpi: getColor('--c-kpi')
+};
+
 function buildGraphData() {
   const nodes = [];
   const links = [];
@@ -1938,7 +1957,7 @@ function buildGraphData() {
       y: 0,
       width: 200,
       height: 50,
-      color: '#fbbf24' // Brighter yellow for groups
+      color: COLORS.group
     };
     nodes.push(node);
     challengeGroupNodes[g.id] = node;
@@ -1959,7 +1978,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#f0d24f'
+      color: COLORS.challenge
     };
     nodes.push(node);
     challengeNodes[sc.id] = node;
@@ -1997,7 +2016,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#8fd0ff'
+      color: COLORS.initiative
     };
     nodes.push(node);
     initiativeNodes[init.id] = node;
@@ -2033,7 +2052,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#1d4ed8'
+      color: COLORS.system
     };
     nodes.push(node);
     systemNodes[sys.id] = node;
@@ -2066,7 +2085,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#22c55e'
+      color: COLORS.kpi
     };
     nodes.push(node);
 
@@ -2354,6 +2373,42 @@ function wrapText(ctx, text, maxWidth) {
   return lines.slice(0, 3); // Max 3 lines
 }
 
+function updateTooltip(node, mouseX, mouseY) {
+  const tooltip = document.getElementById('graphTooltip');
+
+  if (!node || !node.fullLabel) {
+    // Hide tooltip
+    tooltip.style.display = 'none';
+    return;
+  }
+
+  // Show tooltip with full label
+  tooltip.textContent = node.fullLabel;
+  tooltip.style.display = 'block';
+
+  // Position tooltip near cursor
+  const offsetX = 15;
+  const offsetY = 15;
+  const canvas = document.getElementById('graphCanvas');
+  const canvasRect = canvas.getBoundingClientRect();
+
+  // Calculate position relative to canvas container
+  let tooltipX = mouseX - canvasRect.left + offsetX;
+  let tooltipY = mouseY - canvasRect.top + offsetY;
+
+  // Keep tooltip within canvas bounds
+  const tooltipRect = tooltip.getBoundingClientRect();
+  if (tooltipX + tooltipRect.width > canvasRect.width) {
+    tooltipX = mouseX - canvasRect.left - tooltipRect.width - offsetX;
+  }
+  if (tooltipY + tooltipRect.height > canvasRect.height) {
+    tooltipY = mouseY - canvasRect.top - tooltipRect.height - offsetY;
+  }
+
+  tooltip.style.left = tooltipX + 'px';
+  tooltip.style.top = tooltipY + 'px';
+}
+
 function setupGraphInteractions() {
   const canvas = graph.canvas;
   let isDragging = false;
@@ -2388,10 +2443,12 @@ function setupGraphInteractions() {
     if (graph.dragging) {
       graph.dragging.x = x;
       graph.dragging.y = y;
+      updateTooltip(null); // Hide tooltip when dragging
       drawGraph();
     } else if (isDragging) {
       graph.panX = e.clientX - dragStart.x;
       graph.panY = e.clientY - dragStart.y;
+      updateTooltip(null); // Hide tooltip when panning
       drawGraph();
     } else {
       // Hover detection
@@ -2401,6 +2458,8 @@ function setupGraphInteractions() {
         canvas.style.cursor = node ? 'pointer' : 'grab';
         drawGraph();
       }
+      // Update tooltip position and content
+      updateTooltip(node, e.clientX, e.clientY);
     }
   });
 
@@ -2434,17 +2493,158 @@ function setupGraphInteractions() {
     isDragging = false;
     graph.hovering = null;
     canvas.style.cursor = 'grab';
+    updateTooltip(null); // Hide tooltip when mouse leaves canvas
     drawGraph();
   });
 
-  // Wheel zoom disabled - use buttons instead
-  // canvas.addEventListener('wheel', (e) => {
-  //   e.preventDefault();
-  //   const delta = e.deltaY > 0 ? 0.9 : 1.1;
-  //   graph.zoom *= delta;
-  //   graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
-  //   drawGraph();
-  // });
+  // Touch support for mobile devices
+  let touches = [];
+  let lastTouchDistance = 0;
+  let touchStart = { x: 0, y: 0, time: 0 };
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Prevent page zoom
+    touches = Array.from(e.touches);
+
+    if (touches.length === 1) {
+      // Single touch - prepare for pan or node selection
+      const touch = touches[0];
+      const rect = canvas.getBoundingClientRect();
+      touchStart = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now()
+      };
+
+      const x = (touch.clientX - rect.left - graph.panX) / graph.zoom;
+      const y = (touch.clientY - rect.top - graph.panY) / graph.zoom;
+
+      // Check if touching a node
+      const node = findNodeAt(x, y);
+      if (node) {
+        graph.dragging = node;
+      } else {
+        isDragging = true;
+        dragStart = { x: touch.clientX - graph.panX, y: touch.clientY - graph.panY };
+      }
+    } else if (touches.length === 2) {
+      // Two fingers - pinch to zoom
+      isDragging = false;
+      graph.dragging = null;
+      lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault(); // Prevent page zoom
+    touches = Array.from(e.touches);
+
+    if (touches.length === 1 && (graph.dragging || isDragging)) {
+      // Single touch - pan or drag node
+      const touch = touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = (touch.clientX - rect.left - graph.panX) / graph.zoom;
+      const y = (touch.clientY - rect.top - graph.panY) / graph.zoom;
+
+      if (graph.dragging) {
+        graph.dragging.x = x;
+        graph.dragging.y = y;
+      } else if (isDragging) {
+        graph.panX = touch.clientX - dragStart.x;
+        graph.panY = touch.clientY - dragStart.y;
+      }
+      drawGraph();
+    } else if (touches.length === 2) {
+      // Two fingers - pinch to zoom
+      const currentDistance = getTouchDistance(touches[0], touches[1]);
+
+      if (lastTouchDistance > 0) {
+        const scaleFactor = currentDistance / lastTouchDistance;
+        const oldZoom = graph.zoom;
+        graph.zoom *= scaleFactor;
+        graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+
+        // Zoom towards the center of the two touch points
+        const rect = canvas.getBoundingClientRect();
+        const centerX = (touches[0].clientX + touches[1].clientX) / 2 - rect.left;
+        const centerY = (touches[0].clientY + touches[1].clientY) / 2 - rect.top;
+
+        // Adjust pan to keep zoom centered
+        const zoomChange = graph.zoom / oldZoom;
+        graph.panX = centerX - (centerX - graph.panX) * zoomChange;
+        graph.panY = centerY - (centerY - graph.panY) * zoomChange;
+
+        drawGraph();
+      }
+
+      lastTouchDistance = currentDistance;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault(); // Prevent page zoom
+
+    const timeDiff = Date.now() - touchStart.time;
+
+    // If it was a quick tap without much movement, treat as node selection
+    if (touches.length === 1 && timeDiff < 300) {
+      const touch = touches[0];
+      const distMoved = Math.sqrt(
+        Math.pow(touch.clientX - touchStart.x, 2) +
+        Math.pow(touch.clientY - touchStart.y, 2)
+      );
+
+      if (distMoved < 10) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (touch.clientX - rect.left - graph.panX) / graph.zoom;
+        const y = (touch.clientY - rect.top - graph.panY) / graph.zoom;
+        const node = findNodeAt(x, y);
+
+        if (node) {
+          selectGraphNode(node);
+        }
+      }
+    }
+
+    touches = Array.from(e.touches);
+    if (touches.length === 0) {
+      graph.dragging = null;
+      isDragging = false;
+      lastTouchDistance = 0;
+    } else if (touches.length === 1) {
+      // Went from 2 fingers to 1 - reset for panning
+      lastTouchDistance = 0;
+      const touch = touches[0];
+      dragStart = { x: touch.clientX - graph.panX, y: touch.clientY - graph.panY };
+    }
+  }, { passive: false });
+
+  // Helper function to calculate distance between two touches
+  function getTouchDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Mouse wheel zoom for desktop
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const oldZoom = graph.zoom;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    graph.zoom *= delta;
+    graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+
+    // Zoom towards mouse cursor position
+    const zoomChange = graph.zoom / oldZoom;
+    graph.panX = mouseX - (mouseX - graph.panX) * zoomChange;
+    graph.panY = mouseY - (mouseY - graph.panY) * zoomChange;
+
+    drawGraph();
+  }, { passive: false });
 }
 
 function findNodeAt(x, y) {
