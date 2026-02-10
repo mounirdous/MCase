@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Navigate the case live: click any item to jump across - Data v1.0 - CISK Navigator v2.5.3</title>
+<title>Navigate the case live: click any item to jump across - Data v1.0 - CISK Navigator v2.8.1</title>
 
 <style>
   :root {
@@ -290,6 +290,26 @@
     background: rgba(143,208,255,.10);
   }
 
+  /* Checkbox control for toggling link weights */
+  .checkbox-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-control input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: var(--c-initiative);
+  }
+  .checkbox-control:hover {
+    color: var(--c-initiative);
+  }
+
   .card {
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -381,7 +401,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Navigate the case live: click any item to jump across <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.5.3)</span></div>
+      <div class="title">Navigate the case live: click any item to jump across <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.8.1)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -396,6 +416,7 @@
       <span class="seasonlabel">View:</span>
       <button class="btn small primary" id="btnColumnView" onclick="setViewMode('column')">📋 Column</button>
       <button class="btn small" id="btnGraphView" onclick="setViewMode('graph')">🕸️ Graph</button>
+      <button class="btn small" id="btnFlowView" onclick="setViewMode('flow')">🌊 Flow</button>
     </div>
   </div>
 </header>
@@ -501,9 +522,15 @@
           </div>
           <div class="row graph-controls" style="gap:8px;">
             <button class="btn small" id="graphBackBtn" onclick="graphGoBack()" style="display:none;">← Back</button>
+            <label class="checkbox-control">
+              <input type="checkbox" id="graphShowWeights" onchange="toggleGraphWeights(this.checked)">
+              <span>Show Link Weights</span>
+            </label>
             <button class="btn small" onclick="graphZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="graphZoomOut()">🔍− Zoom Out</button>
             <button class="btn small" onclick="graphFitToView()">⊡ Fit to View</button>
+            <button class="btn small" onclick="graphFontSizeIncrease()">A+ Text Larger</button>
+            <button class="btn small" onclick="graphFontSizeDecrease()">A− Text Smaller</button>
             <button class="btn small" onclick="graphReset()">↻ Reset</button>
           </div>
         </div>
@@ -513,7 +540,7 @@
         </div>
       </div>
       <div class="bd" style="padding:0;position:relative;">
-        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <canvas id="graphCanvas" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
         <div id="graphTooltip" style="
           position:absolute;
           display:none;
@@ -545,11 +572,68 @@
     </div>
   </div>
 
+  <!-- Flow View (Sankey Diagram) -->
+  <div class="wrap" id="flowView" style="display:none;">
+    <div class="panel" style="min-height:900px;">
+      <div class="hd">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div class="h1">🌊 Flow View - Sankey Diagram</div>
+            <div class="h2" id="flowSubtitle">Visualize relationship strength through flow thickness</div>
+            <div id="flowSelectionInfo" style="display:none;margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.1);border-radius:6px;font-size:12px;"></div>
+          </div>
+          <div class="row" style="gap:8px;">
+            <label class="checkbox-control">
+              <input type="checkbox" id="flowShowWeights" onchange="toggleFlowWeights(this.checked)">
+              <span>Show Link Weights</span>
+            </label>
+            <button class="btn small" onclick="flowZoomIn()">🔍+ Zoom In</button>
+            <button class="btn small" onclick="flowZoomOut()">🔍− Zoom Out</button>
+            <button class="btn small" onclick="flowFitToView()">⊡ Fit to View</button>
+            <button class="btn small" onclick="flowFontSizeIncrease()">A+ Text Larger</button>
+            <button class="btn small" onclick="flowFontSizeDecrease()">A− Text Smaller</button>
+            <button class="btn small" onclick="flowReset()">↻ Reset</button>
+          </div>
+        </div>
+      </div>
+      <div class="bd" style="padding:0;position:relative;">
+        <canvas id="flowCanvas" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <div id="flowTooltip" style="
+          position:absolute;
+          display:none;
+          background:rgba(16,26,48,0.95);
+          border:1px solid rgba(255,255,255,0.2);
+          border-radius:8px;
+          padding:8px 12px;
+          color:var(--text);
+          font-size:12px;
+          line-height:1.4;
+          pointer-events:none;
+          z-index:100;
+          max-width:300px;
+          box-shadow:0 4px 12px rgba(0,0,0,0.4);
+          backdrop-filter:blur(8px);
+        "></div>
+      </div>
+      <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
+        <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--graph-group);border-radius:4px;"></span> Groups</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-challenge);border-radius:4px;"></span> Sub-Challenges</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-initiative);border-radius:4px;"></span> Initiatives</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-system);border-radius:4px;"></span> Systems</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-kpi);border-radius:4px;"></span> KPIs</div>
+          <span class="muted">|</span>
+          <div class="muted">Flow thickness = relationship weight • Hover to see details • Click to filter</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
 // Data injected from Flask
-const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Digital Transformation"}, {"id": "C2", "number": 2, "priority": 1, "title": "Digital Architecture \u0026 Principles"}, {"id": "C3", "number": 3, "priority": 1, "title": "ERP Consolidation Strategy"}, {"id": "C4", "number": 4, "priority": 2, "title": "Operating Model \u0026 Governance"}, {"id": "C5", "number": 5, "priority": 1, "title": "Security \u0026 Compliance"}, {"id": "C6", "number": 6, "priority": 3, "title": "Risk \u0026 Mitigation"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC4", "impact": "L", "weight": 6}, {"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)", "season": "S1", "text": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "M", "weight": 6}], "id": "C1.I2", "raw": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)", "season": "S1", "text": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)", "season": "S2", "text": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 8}], "id": "C1.I4", "raw": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)", "season": "S2", "text": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "M", "weight": 9}], "id": "C1.I5", "raw": "Productise digital services (offers, pricing, portal; adoption KPIs)", "season": "S2", "text": "Productise digital services (offers, pricing, portal; adoption KPIs)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "L", "weight": 7}, {"challengeId": "C1.SC1", "impact": "H", "weight": 9}, {"challengeId": "C1.SC2", "impact": "M", "weight": 9}], "id": "C1.I6", "raw": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI", "season": "S3", "text": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "L", "weight": 5}], "id": "C2.I1", "raw": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)", "season": "S1", "text": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"}, {"challenges": [{"challengeId": "C2.SC6", "impact": "L", "weight": 5}], "id": "C2.I2", "raw": "Integration standards + platform selection (API/events, iPaaS)", "season": "S1", "text": "Integration standards + platform selection (API/events, iPaaS)"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 7}, {"challengeId": "C2.SC6", "impact": "L", "weight": 4}], "id": "C2.I3", "raw": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)", "season": "S1", "text": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 9}, {"challengeId": "C2.SC5", "impact": "M", "weight": 6}], "id": "C2.I4", "raw": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces", "season": "S2", "text": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "M", "weight": 8}, {"challengeId": "C2.SC2", "impact": "H", "weight": 7}], "id": "C2.I5", "raw": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)", "season": "S2", "text": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "H", "weight": 7}], "id": "C2.I6", "raw": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)", "season": "S2", "text": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC4", "impact": "M", "weight": 5}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I7", "raw": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)", "season": "S3", "text": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)"}, {"challenges": [{"challengeId": "C3.SC6", "impact": "M", "weight": 5}, {"challengeId": "C3.SC1", "impact": "H", "weight": 8}, {"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I1", "raw": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)", "season": "S1", "text": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I2", "raw": "Master data ownership + quality rules (harmonised)", "season": "S1", "text": "Master data ownership + quality rules (harmonised)"}, {"challenges": [{"challengeId": "C3.SC5", "impact": "M", "weight": 6}, {"challengeId": "C3.SC2", "impact": "M", "weight": 10}], "id": "C3.I3", "raw": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)", "season": "S1", "text": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "M", "weight": 7}, {"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I4", "raw": "S/4 pilot live + Finance value gate; first rollout waves launched", "season": "S2", "text": "S/4 pilot live + Finance value gate; first rollout waves launched"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 8}], "id": "C3.I5", "raw": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)", "season": "S1", "text": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 9}], "id": "C3.I6", "raw": "Complete waves + retire legacy; standard processes embedded", "season": "S3", "text": "Complete waves + retire legacy; standard processes embedded"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 10}, {"challengeId": "C4.SC3", "impact": "M", "weight": 7}], "id": "C4.I1", "raw": "Co\u2011owned Business/IT operating model (service + product/value partner)", "season": "S1", "text": "Co\u2011owned Business/IT operating model (service + product/value partner)"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 8}], "id": "C4.I2", "raw": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)", "season": "S1", "text": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I3", "raw": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)", "season": "S1", "text": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC1", "impact": "H", "weight": 9}, {"challengeId": "C4.SC6", "impact": "L", "weight": 7}], "id": "C4.I4", "raw": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)", "season": "S1", "text": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)"}, {"challenges": [{"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I5", "raw": "Right sourcing (outsource commodity ops; retain Competency Center)", "season": "S2", "text": "Right sourcing (outsource commodity ops; retain Competency Center)"}, {"challenges": [{"challengeId": "C4.SC6", "impact": "L", "weight": 6}, {"challengeId": "C4.SC3", "impact": "M", "weight": 4}], "id": "C4.I6", "raw": "Continuous improvement cadence (process mining / automation where justified)", "season": "S3", "text": "Continuous improvement cadence (process mining / automation where justified)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}, {"challengeId": "C5.SC2", "impact": "M", "weight": 4}], "id": "C5.I1", "raw": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)", "season": "S1", "text": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 7}, {"challengeId": "C5.SC4", "impact": "M", "weight": 6}], "id": "C5.I2", "raw": "Identity baseline incl. MFA + least privilege + JML + PAM", "season": "S1", "text": "Identity baseline incl. MFA + least privilege + JML + PAM"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}], "id": "C5.I3", "raw": "OT security baseline (segmentation, secure remote access, vuln routine)", "season": "S1", "text": "OT security baseline (segmentation, secure remote access, vuln routine)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "M", "weight": 6}, {"challengeId": "C5.SC1", "impact": "H", "weight": 6}], "id": "C5.I4", "raw": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)", "season": "S2", "text": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 5}, {"challengeId": "C5.SC5", "impact": "M", "weight": 7}, {"challengeId": "C5.SC6", "impact": "L", "weight": 7}], "id": "C5.I5", "raw": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)", "season": "S3", "text": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)"}, {"challenges": [{"challengeId": "C5.SC6", "impact": "H", "weight": 9}], "id": "C5.I6", "raw": "Security culture + vendor risk + audit drills", "season": "S1", "text": "Security culture + vendor risk + audit drills"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "L", "weight": 4}], "id": "C6.I1", "raw": "Standard vs local boundaries + exception governance", "season": "S1", "text": "Standard vs local boundaries + exception governance"}, {"challenges": [{"challengeId": "C6.SC4", "impact": "L", "weight": 6}], "id": "C6.I2", "raw": "Wave readiness gates + cutover/rollback playbook (plant-safe)", "season": "S1", "text": "Wave readiness gates + cutover/rollback playbook (plant-safe)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "M", "weight": 6}, {"challengeId": "C6.SC1", "impact": "L", "weight": 7}], "id": "C6.I3", "raw": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)", "season": "S1", "text": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "L", "weight": 5}], "id": "C6.I4", "raw": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)", "season": "S2", "text": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "M", "weight": 7}], "id": "C6.I5", "raw": "Vendor governance (SLAs, demos, health\u2011check, exit plan)", "season": "S2", "text": "Vendor governance (SLAs, demos, health\u2011check, exit plan)"}, {"challenges": [{"challengeId": "C6.SC1", "impact": "M", "weight": 7}, {"challengeId": "C6.SC2", "impact": "L", "weight": 4}], "id": "C6.I6", "raw": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan", "season": "S3", "text": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Lead time \u221215\u201320% (end\u2011to\u2011end, incl. engineering + supply)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 6}, {"systemId": "C1.S3", "weight": 8}], "text": "On-time delivery +5\u20138 percentage points (definition agreed)"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Inventory turns +10\u201315% + WIP aging reduced"}, {"id": "C1.K4", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Cost of poor quality (COPQ) \u221210% (scrap + rework + warranty)"}, {"id": "C1.K5", "systems": [{"systemId": "C1.S4", "weight": 7}, {"systemId": "C1.S1", "weight": 9}], "text": "Digital services revenue enabled +CHF 3\u20138m/year by Year 3"}, {"id": "C1.K6", "systems": [{"systemId": "C1.S3", "weight": 9}], "text": "Net value KPI: benefits vs (investment + run\u2011cost \u0394), Finance-signed quarterly"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 8}], "text": "Core simplification: ERP instances (3\u21921); CRM instances (3\u21921)"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S4", "weight": 7}, {"systemId": "C2.S3", "weight": 6}], "text": "Integration health: % interfaces via iPaaS/API (incl. OT); # point\u2011to\u2011point retired"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S2", "weight": 8}, {"systemId": "C2.S5", "weight": 7}], "text": "Data quality: master data accuracy/completeness; \u0027single version of truth\u0027 adoption"}, {"id": "C2.K4", "systems": [{"systemId": "C2.S3", "weight": 7}, {"systemId": "C2.S6", "weight": 9}], "text": "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"}, {"id": "C2.K5", "systems": [{"systemId": "C2.S5", "weight": 7}], "text": "Security coverage: MFA/PAM/logging coverage; OT segmentation \u0026 secure remote access compliance"}, {"id": "C2.K6", "systems": [{"systemId": "C2.S3", "weight": 8}], "text": "Delivery speed: time to onboard a new site/line/machine; change failure rate"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S5", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Consolidation: ERP cores \u2192 1; legacy systems retired per wave plan"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S4", "weight": 9}], "text": "Finance efficiency: close cycle time \u2193; manual reconciliations \u2193; auditability \u2191"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S4", "weight": 7}], "text": "Operational control: inventory accuracy \u2191; inventory turns +10\u201315%; WIP aging \u2193"}, {"id": "C3.K4", "systems": [{"systemId": "C3.S4", "weight": 6}, {"systemId": "C3.S2", "weight": 6}], "text": "Cost transparency: standard cost coverage \u2191; variance drill-down cycle \u2193"}, {"id": "C3.K5", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Service to the business: fewer workarounds; process compliance/adoption \u2191"}, {"id": "C3.K6", "systems": [{"systemId": "C3.S2", "weight": 9}], "text": "Cost control: programme burn rate vs budget; run-cost per user/ticket \u2193"}, {"id": "C4.K1", "systems": [{"systemId": "C4.S5", "weight": 8}, {"systemId": "C4.S1", "weight": 8}, {"systemId": "C4.S6", "weight": 8}], "text": "Stakeholder trust: IT NPS / satisfaction \u2191; fewer escalations"}, {"id": "C4.K2", "systems": [{"systemId": "C4.S3", "weight": 9}, {"systemId": "C4.S4", "weight": 7}], "text": "Delivery performance: % initiatives delivered on time/on value; cycle time idea\u2192release \u2193"}, {"id": "C4.K3", "systems": [{"systemId": "C4.S6", "weight": 9}, {"systemId": "C4.S2", "weight": 7}], "text": "Adoption: active usage, process compliance, training completion; Excel workarounds \u2193"}, {"id": "C4.K4", "systems": [{"systemId": "C4.S4", "weight": 6}], "text": "Run-cost optimisation: licences rationalised; cost per ticket \u2193; run-cost \u0394 tracked"}, {"id": "C4.K5", "systems": [{"systemId": "C4.S3", "weight": 10}, {"systemId": "C4.S4", "weight": 6}, {"systemId": "C4.S1", "weight": 7}], "text": "Governance effectiveness: decision cycle time \u2193; fewer uncontrolled exceptions"}, {"id": "C4.K6", "systems": [{"systemId": "C4.S1", "weight": 8}], "text": "Talent \u0026 culture: engagement \u2191; critical roles filled; attrition \u2193; capability coverage \u2191"}, {"id": "C5.K1", "systems": [{"systemId": "C5.S1", "weight": 9}, {"systemId": "C5.S2", "weight": 8}], "text": "MFA coverage (%) + % privileged accounts under PAM"}, {"id": "C5.K2", "systems": [{"systemId": "C5.S1", "weight": 9}], "text": "Vulnerability aging: % critical patched within SLA; OT compensating controls"}, {"id": "C5.K3", "systems": [{"systemId": "C5.S5", "weight": 8}, {"systemId": "C5.S3", "weight": 8}], "text": "MTTD and MTTR for security incidents (target \u2193)"}, {"id": "C5.K4", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S5", "weight": 6}], "text": "Phishing resilience: click rate \u2193; training completion \u2191"}, {"id": "C5.K5", "systems": [{"systemId": "C5.S2", "weight": 9}], "text": "Audit readiness: # major findings = 0; time to produce evidence \u2193"}, {"id": "C5.K6", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S6", "weight": 9}, {"systemId": "C5.S4", "weight": 9}], "text": "Resilience: backup restore success rate; RTO/RPO met in tests"}, {"id": "C6.K1", "systems": [{"systemId": "C6.S1", "weight": 9}, {"systemId": "C6.S6", "weight": 8}], "text": "Wave readiness score (% green) before go\u2011live; # waves delayed for readiness (ok)"}, {"id": "C6.K2", "systems": [{"systemId": "C6.S3", "weight": 9}, {"systemId": "C6.S2", "weight": 8}], "text": "Adoption: training completion; active users; process compliance rate"}, {"id": "C6.K3", "systems": [{"systemId": "C6.S5", "weight": 9}], "text": "Data quality score (master + transactional); inventory accuracy"}, {"id": "C6.K4", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Delivery health: schedule variance, milestone hit rate, change failure rate"}, {"id": "C6.K5", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Cost control: burn rate vs budget; run\u2011cost delta tracked"}, {"id": "C6.K6", "systems": [{"systemId": "C6.S1", "weight": 7}, {"systemId": "C6.S4", "weight": 9}], "text": "Operational stability: incident rate during/after releases; downtime minutes"}], "meta": {"generated": "2026-02-09T12:09:03.641569", "sourceDeck": "Navigate the case live: click any item to jump across"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Lead-time too long/variable across Order\u2192Engineering\u2192Supply\u2192Build"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "On-time delivery gaps; late surprises drive expediting \u0026 firefighting"}, {"groupId": "C1", "id": "C1.SC3", "priority": 3, "text": "Inventory/WIP buffers due to limited visibility \u0026 planning discipline"}, {"groupId": "C1", "id": "C1.SC4", "priority": 3, "text": "Cost transparency gaps (standard cost, variances, margin leakage)"}, {"groupId": "C1", "id": "C1.SC5", "priority": 3, "text": "Digital services not yet packaged/scaled (remote support, predictive)"}, {"groupId": "C1", "id": "C1.SC6", "priority": 1, "text": "Customer experience fragmented (3 CRMs); limited pipeline \u0026 service visibility; inconsistent customer master"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Fragmented landscape (multiple ERP/CRM instances; local solutions)"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Point\u2011to\u2011point integrations create fragility and high change cost"}, {"groupId": "C2", "id": "C2.SC3", "priority": 3, "text": "No single trusted data layer for plant-to-board decisions"}, {"groupId": "C2", "id": "C2.SC4", "priority": 3, "text": "OT/IT + IIoT constraints: segmented shop\u2011floor, sensor connectivity, uptime, safety, vendor access"}, {"groupId": "C2", "id": "C2.SC5", "priority": 2, "text": "Cloud + connectivity heterogeneity (incl. Wi\u2011Fi/5G); resilience \u0026 DR not uniform"}, {"groupId": "C2", "id": "C2.SC6", "priority": 3, "text": "Digital services scale needs secure connectivity + reusable patterns"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Multiple ERP cores (3 SAP instances) + local CN system + process variants \u2192 duplication \u0026 friction"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"}, {"groupId": "C3", "id": "C3.SC3", "priority": 3, "text": "Excel workarounds for planning, costing, reporting \u2192 slow decisions and errors"}, {"groupId": "C3", "id": "C3.SC4", "priority": 3, "text": "Limited end\u2011to\u2011end traceability across PLM \u2194 shop\u2011floor \u2194 quality \u2194 service"}, {"groupId": "C3", "id": "C3.SC5", "priority": 3, "text": "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"}, {"groupId": "C3", "id": "C3.SC6", "priority": 3, "text": "SAP program already in motion (partner likely selected) \u2192 need a health-check, not a restart"}, {"groupId": "C4", "id": "C4.SC1", "priority": 1, "text": "IT perceived as reactive; unclear ownership \u2192 slow delivery and \u0027firefighting\u0027"}, {"groupId": "C4", "id": "C4.SC2", "priority": 3, "text": "Decentralised divisions; low trust in group standards \u2192 resistance to harmonisation"}, {"groupId": "C4", "id": "C4.SC3", "priority": 3, "text": "Portfolio noise: no single intake/waterline \u2192 too many priorities at once"}, {"groupId": "C4", "id": "C4.SC4", "priority": 2, "text": "Change capacity constraints; training/adoption often under-funded"}, {"groupId": "C4", "id": "C4.SC5", "priority": 3, "text": "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"}, {"groupId": "C4", "id": "C4.SC6", "priority": 3, "text": "Business/IT misalignment: requirements and outcomes not co\u2011owned end\u2011to\u2011end"}, {"groupId": "C5", "id": "C5.SC1", "priority": 2, "text": "Expanded attack surface (cloud, remote access, supplier connections, IoT)"}, {"groupId": "C5", "id": "C5.SC2", "priority": 3, "text": "OT constraints + legacy devices \u2192 segmentation and patching are hard"}, {"groupId": "C5", "id": "C5.SC3", "priority": 2, "text": "Identity \u0026 privileged access sprawl; inconsistent access governance"}, {"groupId": "C5", "id": "C5.SC4", "priority": 3, "text": "Limited detection/response maturity (logging, SOC, incident routines)"}, {"groupId": "C5", "id": "C5.SC5", "priority": 3, "text": "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"}, {"groupId": "C5", "id": "C5.SC6", "priority": 2, "text": "Third\u2011party risk (partners, integrators) + SAP programme security gates"}, {"groupId": "C6", "id": "C6.SC1", "priority": 3, "text": "If divisions resist standardisation, benefits won\u0027t land (Excel/workarounds persist)"}, {"groupId": "C6", "id": "C6.SC2", "priority": 3, "text": "If data quality is weak, planning and inventory KPIs won\u0027t move"}, {"groupId": "C6", "id": "C6.SC3", "priority": 3, "text": "If we disrupt plants during cutovers, trust is lost and programme stalls"}, {"groupId": "C6", "id": "C6.SC4", "priority": 3, "text": "If scope/customisation grows, costs and timelines explode (clean core violated)"}, {"groupId": "C6", "id": "C6.SC5", "priority": 3, "text": "If vendors/partners under\u2011deliver, knowledge and control erode"}, {"groupId": "C6", "id": "C6.SC6", "priority": 2, "text": "If security/OT constraints are ignored, risk increases during transformation"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I6", "weight": 8}, {"initiativeId": "C1.I5", "weight": 9}], "text": "Core ERP (SAP S/4HANA as system of record)", "title": ""}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 5}], "text": "Planning cockpit (MRP exceptions / APS where needed)", "title": ""}, {"id": "C1.S3", "initiatives": [{"initiativeId": "C1.I3", "weight": 9}, {"initiativeId": "C1.I4", "weight": 9}, {"initiativeId": "C1.I1", "weight": 7}], "text": "MES / Quality execution (critical lines; traceability)", "title": ""}, {"id": "C1.S4", "initiatives": [{"initiativeId": "C1.I2", "weight": 9}], "text": "PLM + Engineering change control (ECR/ECO) integrated", "title": ""}, {"id": "C1.S5", "initiatives": [{"initiativeId": "C1.I1", "weight": 8}, {"initiativeId": "C1.I3", "weight": 9}], "text": "Enterprise data platform + KPI layer (BI, analytics, AI-ready)", "title": ""}, {"id": "C1.S6", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I5", "weight": 10}, {"initiativeId": "C1.I6", "weight": 9}, {"initiativeId": "C1.I3", "weight": 9}], "text": "CRM core (Salesforce 3\u21921) + customer portal + secure remote connectivity / IoT data capture", "title": ""}, {"bullets": ["CRM / sales workflows", "Customer portal", "Service experience"], "id": "C2.S1", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I7", "weight": 7}, {"initiativeId": "C2.I6", "weight": 8}], "text": "", "title": "Experience layer (CRM + customer portal + service)", "type": "system"}, {"bullets": ["Core ERP (SAP S/4HANA)", "PLM (engineering change)", "MES / Quality (shop\u2011floor execution)"], "id": "C2.S2", "initiatives": [{"initiativeId": "C2.I4", "weight": 9}], "text": "", "title": "Business core (standard backbone)", "type": "system"}, {"bullets": ["Finance", "HR", "Other corporate apps"], "id": "C2.S3", "initiatives": [{"initiativeId": "C2.I1", "weight": 7}, {"initiativeId": "C2.I2", "weight": 5}], "text": "", "title": "Corporate applications (Finance / HR / etc.)", "type": "system"}, {"bullets": ["API / integration platform (iPaaS)", "Events / pub\u2011sub", "OT / edge gateways (shop\u2011floor connectivity)"], "id": "C2.S4", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I4", "weight": 6}, {"initiativeId": "C2.I1", "weight": 6}], "text": "", "title": "Integration \u0026 event backbone", "type": "system"}, {"bullets": ["Enterprise data platform", "Historian / time\u2011series for OT", "KPI semantic layer", "BI / dashboards"], "id": "C2.S5", "initiatives": [{"initiativeId": "C2.I4", "weight": 8}, {"initiativeId": "C2.I2", "weight": 5}, {"initiativeId": "C2.I6", "weight": 6}, {"initiativeId": "C2.I3", "weight": 8}], "text": "", "title": "Data \u0026 analytics platform", "type": "system"}, {"bullets": ["Hybrid cloud", "Network (LAN / Wi\u2011Fi / 5G)", "OT zones / segmentation foundations", "Disaster recovery"], "id": "C2.S6", "initiatives": [{"initiativeId": "C2.I6", "weight": 5}], "text": "", "title": "Infrastructure foundation", "type": "system"}, {"bullets": ["Identity (MFA / access)", "Central logging / SIEM", "Zone model + monitoring", "Audit evidence"], "id": "C2.S7", "initiatives": [{"initiativeId": "C2.I6", "weight": 8}, {"initiativeId": "C2.I5", "weight": 7}, {"initiativeId": "C2.I1", "weight": 5}], "text": "", "title": "Security \u0026 identity (applies to all layers)", "type": "system"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I3", "weight": 10}, {"initiativeId": "C3.I6", "weight": 9}, {"initiativeId": "C3.I4", "weight": 10}], "text": "SAP S/4HANA as digital core + \u0027clean core\u0027 guardrails (standard first)", "title": ""}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I4", "weight": 5}, {"initiativeId": "C3.I6", "weight": 8}, {"initiativeId": "C3.I2", "weight": 7}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Master data governance \u0026 tooling (workflows, validation, ownership/RACI)", "title": ""}, {"id": "C3.S3", "initiatives": [{"initiativeId": "C3.I3", "weight": 5}, {"initiativeId": "C3.I6", "weight": 5}, {"initiativeId": "C3.I2", "weight": 8}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Integration platform (iPaaS/API/events) + retire point\u2011to\u2011point interfaces", "title": ""}, {"id": "C3.S4", "initiatives": [{"initiativeId": "C3.I3", "weight": 7}], "text": "MES/QMS integration on critical lines to unlock traceability \u0026 COPQ reduction", "title": ""}, {"id": "C3.S5", "initiatives": [{"initiativeId": "C3.I4", "weight": 8}], "text": "Delivery factory: testing, cutover runbooks, rehearsals, training \u0026 hypercare", "title": ""}, {"id": "C3.S6", "initiatives": [{"initiativeId": "C3.I6", "weight": 6}, {"initiativeId": "C3.I5", "weight": 7}], "text": "Partner model + retained Competency Center (architecture, data, security, vendor governance)", "title": ""}, {"id": "C4.S1", "initiatives": [{"initiativeId": "C4.I6", "weight": 5}], "text": "Executive governance: ExCo steering + quarterly value gates + decision log", "title": ""}, {"id": "C4.S2", "initiatives": [{"initiativeId": "C4.I5", "weight": 5}], "text": "Digital investment framework: categories, scoring, waterline, benefits tracking", "title": ""}, {"id": "C4.S3", "initiatives": [{"initiativeId": "C4.I6", "weight": 10}, {"initiativeId": "C4.I1", "weight": 8}, {"initiativeId": "C4.I4", "weight": 10}], "text": "Product \u0026 process ownership (ERP / Data / Security / Service) + RACI", "title": ""}, {"id": "C4.S4", "initiatives": [{"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I6", "weight": 6}], "text": "Service operations system: ITSM + service catalogue + SLA dashboards; \u0027runner/repeater/stranger\u0027 support tiers", "title": ""}, {"id": "C4.S5", "initiatives": [{"initiativeId": "C4.I5", "weight": 8}, {"initiativeId": "C4.I6", "weight": 6}, {"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I4", "weight": 5}], "text": "Vendor \u0026 partner governance: managed services towers, SLAs, KPI dashboards, escalation paths", "title": ""}, {"id": "C4.S6", "initiatives": [{"initiativeId": "C4.I4", "weight": 6}, {"initiativeId": "C4.I2", "weight": 8}], "text": "People \u0026 change system: change champions, training academy, incentives, role upgrades (PO, data owners)", "title": ""}, {"id": "C5.S1", "initiatives": [{"initiativeId": "C5.I1", "weight": 7}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I3", "weight": 8}, {"initiativeId": "C5.I6", "weight": 7}], "text": "MFA / Identity platform (SSO, conditional access)", "title": ""}, {"id": "C5.S2", "initiatives": [{"initiativeId": "C5.I1", "weight": 8}, {"initiativeId": "C5.I5", "weight": 7}], "text": "PAM (privileged vault, session recording)", "title": ""}, {"id": "C5.S3", "initiatives": [{"initiativeId": "C5.I5", "weight": 5}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I4", "weight": 6}, {"initiativeId": "C5.I3", "weight": 5}], "text": "Endpoint protection (EDR) + device hygiene / patch tooling", "title": ""}, {"id": "C5.S4", "initiatives": [{"initiativeId": "C5.I3", "weight": 7}], "text": "Central logging + SIEM/SOAR + SOC (managed where useful)", "title": ""}, {"id": "C5.S5", "initiatives": [{"initiativeId": "C5.I6", "weight": 6}, {"initiativeId": "C5.I2", "weight": 7}], "text": "Network segmentation (IT/OT zones), firewalls, secure remote access", "title": ""}, {"id": "C5.S6", "initiatives": [{"initiativeId": "C5.I4", "weight": 5}], "text": "Resilience: backup/DR, immutable backups, recovery testing", "title": ""}, {"id": "C6.S1", "initiatives": [{"initiativeId": "C6.I3", "weight": 8}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Programme control tower: PMO + risk register + decision log", "title": ""}, {"id": "C6.S2", "initiatives": [{"initiativeId": "C6.I4", "weight": 10}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Wave readiness scorecard + go/no\u2011go forum", "title": ""}, {"id": "C6.S3", "initiatives": [{"initiativeId": "C6.I4", "weight": 8}, {"initiativeId": "C6.I5", "weight": 6}], "text": "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model", "title": ""}, {"id": "C6.S4", "initiatives": [{"initiativeId": "C6.I1", "weight": 6}], "text": "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack", "title": ""}, {"id": "C6.S5", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I6", "weight": 7}], "text": "Data governance system (owners, quality rules, stewardship tooling)", "title": ""}, {"id": "C6.S6", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I5", "weight": 5}, {"initiativeId": "C6.I3", "weight": 6}, {"initiativeId": "C6.I2", "weight": 7}], "text": "Partner performance dashboard + escalation paths (internal Competency Center)", "title": ""}]};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Digital Transformation"}, {"id": "C2", "number": 2, "priority": 1, "title": "Digital Architecture \u0026 Principles"}, {"id": "C3", "number": 3, "priority": 1, "title": "ERP Consolidation Strategy"}, {"id": "C4", "number": 4, "priority": 2, "title": "Operating Model \u0026 Governance"}, {"id": "C5", "number": 5, "priority": 1, "title": "Security \u0026 Compliance"}, {"id": "C6", "number": 6, "priority": 3, "title": "Risk \u0026 Mitigation"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC4", "impact": "L", "weight": 6}, {"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)", "season": "S1", "text": "Value streams \u0026 standard E2E processes (P2P, ETO, Service) + CRM blueprint (3\u21921)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "M", "weight": 6}], "id": "C1.I2", "raw": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)", "season": "S1", "text": "Planning discipline \u0026 control\u2011tower routines (S\u0026OP/MRP, exception mgmt)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)", "season": "S2", "text": "Shop\u2011floor visibility on critical lines (WIP, bottlenecks, digital WI)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 8}], "id": "C1.I4", "raw": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)", "season": "S2", "text": "Closed\u2011loop quality \u0026 traceability (NC/CAPA, root\u2011cause analytics)"}, {"challenges": [{"challengeId": "C1.SC1", "impact": "M", "weight": 9}], "id": "C1.I5", "raw": "Productise digital services (offers, pricing, portal; adoption KPIs)", "season": "S2", "text": "Productise digital services (offers, pricing, portal; adoption KPIs)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "L", "weight": 7}, {"challengeId": "C1.SC1", "impact": "H", "weight": 9}, {"challengeId": "C1.SC2", "impact": "M", "weight": 9}], "id": "C1.I6", "raw": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI", "season": "S3", "text": "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "L", "weight": 5}], "id": "C2.I1", "raw": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)", "season": "S1", "text": "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"}, {"challenges": [{"challengeId": "C2.SC6", "impact": "L", "weight": 5}], "id": "C2.I2", "raw": "Integration standards + platform selection (API/events, iPaaS)", "season": "S1", "text": "Integration standards + platform selection (API/events, iPaaS)"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 7}, {"challengeId": "C2.SC6", "impact": "L", "weight": 4}], "id": "C2.I3", "raw": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)", "season": "S1", "text": "Data governance + KPI semantic layer v1 (plant\u2011to\u2011board)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 9}, {"challengeId": "C2.SC5", "impact": "M", "weight": 6}], "id": "C2.I4", "raw": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces", "season": "S2", "text": "Implement iPaaS/API; retire top point\u2011to\u2011point interfaces"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "M", "weight": 8}, {"challengeId": "C2.SC2", "impact": "H", "weight": 7}], "id": "C2.I5", "raw": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)", "season": "S2", "text": "Enterprise data platform + historian/time\u2011series (ERP/CRM/MES/PLM priority domains)"}, {"challenges": [{"challengeId": "C2.SC5", "impact": "H", "weight": 7}], "id": "C2.I6", "raw": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)", "season": "S2", "text": "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi\u2011Fi/5G, shop\u2011floor zones, DR)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC4", "impact": "M", "weight": 5}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I7", "raw": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)", "season": "S3", "text": "End\u2011to\u2011end digital thread + cross\u2011site KPI model (PLM\u2194ERP\u2194MES\u2194service)"}, {"challenges": [{"challengeId": "C3.SC6", "impact": "M", "weight": 5}, {"challengeId": "C3.SC1", "impact": "H", "weight": 8}, {"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I1", "raw": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)", "season": "S1", "text": "One S/4HANA template; clean core; explicit exceptions (incl. CN path)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "L", "weight": 7}], "id": "C3.I2", "raw": "Master data ownership + quality rules (harmonised)", "season": "S1", "text": "Master data ownership + quality rules (harmonised)"}, {"challenges": [{"challengeId": "C3.SC5", "impact": "M", "weight": 6}, {"challengeId": "C3.SC2", "impact": "M", "weight": 10}], "id": "C3.I3", "raw": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)", "season": "S1", "text": "Standard core processes (O2C, P2P, Plan\u2011to\u2011Produce, ETO)"}, {"challenges": [{"challengeId": "C3.SC4", "impact": "M", "weight": 7}, {"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I4", "raw": "S/4 pilot live + Finance value gate; first rollout waves launched", "season": "S2", "text": "S/4 pilot live + Finance value gate; first rollout waves launched"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 8}], "id": "C3.I5", "raw": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)", "season": "S1", "text": "Plant\u2011to\u2011board KPI layer (cost, inventory, delivery, quality)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 9}], "id": "C3.I6", "raw": "Complete waves + retire legacy; standard processes embedded", "season": "S3", "text": "Complete waves + retire legacy; standard processes embedded"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 10}, {"challengeId": "C4.SC3", "impact": "M", "weight": 7}], "id": "C4.I1", "raw": "Co\u2011owned Business/IT operating model (service + product/value partner)", "season": "S1", "text": "Co\u2011owned Business/IT operating model (service + product/value partner)"}, {"challenges": [{"challengeId": "C4.SC1", "impact": "H", "weight": 8}], "id": "C4.I2", "raw": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)", "season": "S1", "text": "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I3", "raw": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)", "season": "S1", "text": "Finance\u2011auditable value governance (benefits tracker + quarterly value gates)"}, {"challenges": [{"challengeId": "C4.SC4", "impact": "H", "weight": 9}, {"challengeId": "C4.SC1", "impact": "H", "weight": 9}, {"challengeId": "C4.SC6", "impact": "L", "weight": 7}], "id": "C4.I4", "raw": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)", "season": "S1", "text": "Culture shift + adoption model (service \u2192 product/value; measurable uptake)"}, {"challenges": [{"challengeId": "C4.SC2", "impact": "M", "weight": 7}], "id": "C4.I5", "raw": "Right sourcing (outsource commodity ops; retain Competency Center)", "season": "S2", "text": "Right sourcing (outsource commodity ops; retain Competency Center)"}, {"challenges": [{"challengeId": "C4.SC6", "impact": "L", "weight": 6}, {"challengeId": "C4.SC3", "impact": "M", "weight": 4}], "id": "C4.I6", "raw": "Continuous improvement cadence (process mining / automation where justified)", "season": "S3", "text": "Continuous improvement cadence (process mining / automation where justified)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}, {"challengeId": "C5.SC2", "impact": "M", "weight": 4}], "id": "C5.I1", "raw": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)", "season": "S1", "text": "Risk\u2011based security roadmap (crown jewels, threats, prioritised controls)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 7}, {"challengeId": "C5.SC4", "impact": "M", "weight": 6}], "id": "C5.I2", "raw": "Identity baseline incl. MFA + least privilege + JML + PAM", "season": "S1", "text": "Identity baseline incl. MFA + least privilege + JML + PAM"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "L", "weight": 5}], "id": "C5.I3", "raw": "OT security baseline (segmentation, secure remote access, vuln routine)", "season": "S1", "text": "OT security baseline (segmentation, secure remote access, vuln routine)"}, {"challenges": [{"challengeId": "C5.SC4", "impact": "M", "weight": 6}, {"challengeId": "C5.SC1", "impact": "H", "weight": 6}], "id": "C5.I4", "raw": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)", "season": "S2", "text": "Detection \u0026 response (central logging \u2192 SIEM/SOC; playbooks)"}, {"challenges": [{"challengeId": "C5.SC2", "impact": "L", "weight": 5}, {"challengeId": "C5.SC5", "impact": "M", "weight": 7}, {"challengeId": "C5.SC6", "impact": "L", "weight": 7}], "id": "C5.I5", "raw": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)", "season": "S3", "text": "Resilience \u0026 audit readiness embedded (DR tests; OT patch/vuln cadence)"}, {"challenges": [{"challengeId": "C5.SC6", "impact": "H", "weight": 9}], "id": "C5.I6", "raw": "Security culture + vendor risk + audit drills", "season": "S1", "text": "Security culture + vendor risk + audit drills"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "L", "weight": 4}], "id": "C6.I1", "raw": "Standard vs local boundaries + exception governance", "season": "S1", "text": "Standard vs local boundaries + exception governance"}, {"challenges": [{"challengeId": "C6.SC4", "impact": "L", "weight": 6}], "id": "C6.I2", "raw": "Wave readiness gates + cutover/rollback playbook (plant-safe)", "season": "S1", "text": "Wave readiness gates + cutover/rollback playbook (plant-safe)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "M", "weight": 6}, {"challengeId": "C6.SC1", "impact": "L", "weight": 7}], "id": "C6.I3", "raw": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)", "season": "S1", "text": "Benefits tracker + no\u2011double\u2011count rules; value gates (blueprint\u2192pilot\u2192scale)"}, {"challenges": [{"challengeId": "C6.SC3", "impact": "L", "weight": 5}], "id": "C6.I4", "raw": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)", "season": "S2", "text": "Change system (super-users, training, incentives; adoption KPIs; Excel kill\u2011plan)"}, {"challenges": [{"challengeId": "C6.SC5", "impact": "M", "weight": 7}], "id": "C6.I5", "raw": "Vendor governance (SLAs, demos, health\u2011check, exit plan)", "season": "S2", "text": "Vendor governance (SLAs, demos, health\u2011check, exit plan)"}, {"challenges": [{"challengeId": "C6.SC1", "impact": "M", "weight": 7}, {"challengeId": "C6.SC2", "impact": "L", "weight": 4}], "id": "C6.I6", "raw": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan", "season": "S3", "text": "Sustain value/risk control: tech\u2011debt retirement; benefits realised vs plan"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Lead time \u221215\u201320% (end\u2011to\u2011end, incl. engineering + supply)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 6}, {"systemId": "C1.S3", "weight": 8}], "text": "On-time delivery +5\u20138 percentage points (definition agreed)"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S1", "weight": 9}], "text": "Inventory turns +10\u201315% + WIP aging reduced"}, {"id": "C1.K4", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Cost of poor quality (COPQ) \u221210% (scrap + rework + warranty)"}, {"id": "C1.K5", "systems": [{"systemId": "C1.S4", "weight": 7}, {"systemId": "C1.S1", "weight": 9}], "text": "Digital services revenue enabled +CHF 3\u20138m/year by Year 3"}, {"id": "C1.K6", "systems": [{"systemId": "C1.S3", "weight": 9}], "text": "Net value KPI: benefits vs (investment + run\u2011cost \u0394), Finance-signed quarterly"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 8}], "text": "Core simplification: ERP instances (3\u21921); CRM instances (3\u21921)"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S4", "weight": 7}, {"systemId": "C2.S3", "weight": 6}], "text": "Integration health: % interfaces via iPaaS/API (incl. OT); # point\u2011to\u2011point retired"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S2", "weight": 8}, {"systemId": "C2.S5", "weight": 7}], "text": "Data quality: master data accuracy/completeness; \u0027single version of truth\u0027 adoption"}, {"id": "C2.K4", "systems": [{"systemId": "C2.S3", "weight": 7}, {"systemId": "C2.S6", "weight": 9}], "text": "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"}, {"id": "C2.K5", "systems": [{"systemId": "C2.S5", "weight": 7}], "text": "Security coverage: MFA/PAM/logging coverage; OT segmentation \u0026 secure remote access compliance"}, {"id": "C2.K6", "systems": [{"systemId": "C2.S3", "weight": 8}], "text": "Delivery speed: time to onboard a new site/line/machine; change failure rate"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S5", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Consolidation: ERP cores \u2192 1; legacy systems retired per wave plan"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S4", "weight": 9}], "text": "Finance efficiency: close cycle time \u2193; manual reconciliations \u2193; auditability \u2191"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S4", "weight": 7}], "text": "Operational control: inventory accuracy \u2191; inventory turns +10\u201315%; WIP aging \u2193"}, {"id": "C3.K4", "systems": [{"systemId": "C3.S4", "weight": 6}, {"systemId": "C3.S2", "weight": 6}], "text": "Cost transparency: standard cost coverage \u2191; variance drill-down cycle \u2193"}, {"id": "C3.K5", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S4", "weight": 9}], "text": "Service to the business: fewer workarounds; process compliance/adoption \u2191"}, {"id": "C3.K6", "systems": [{"systemId": "C3.S2", "weight": 9}], "text": "Cost control: programme burn rate vs budget; run-cost per user/ticket \u2193"}, {"id": "C4.K1", "systems": [{"systemId": "C4.S5", "weight": 8}, {"systemId": "C4.S1", "weight": 8}, {"systemId": "C4.S6", "weight": 8}], "text": "Stakeholder trust: IT NPS / satisfaction \u2191; fewer escalations"}, {"id": "C4.K2", "systems": [{"systemId": "C4.S3", "weight": 9}, {"systemId": "C4.S4", "weight": 7}], "text": "Delivery performance: % initiatives delivered on time/on value; cycle time idea\u2192release \u2193"}, {"id": "C4.K3", "systems": [{"systemId": "C4.S6", "weight": 9}, {"systemId": "C4.S2", "weight": 7}], "text": "Adoption: active usage, process compliance, training completion; Excel workarounds \u2193"}, {"id": "C4.K4", "systems": [{"systemId": "C4.S4", "weight": 6}], "text": "Run-cost optimisation: licences rationalised; cost per ticket \u2193; run-cost \u0394 tracked"}, {"id": "C4.K5", "systems": [{"systemId": "C4.S3", "weight": 10}, {"systemId": "C4.S4", "weight": 6}, {"systemId": "C4.S1", "weight": 7}], "text": "Governance effectiveness: decision cycle time \u2193; fewer uncontrolled exceptions"}, {"id": "C4.K6", "systems": [{"systemId": "C4.S1", "weight": 8}], "text": "Talent \u0026 culture: engagement \u2191; critical roles filled; attrition \u2193; capability coverage \u2191"}, {"id": "C5.K1", "systems": [{"systemId": "C5.S1", "weight": 9}, {"systemId": "C5.S2", "weight": 8}], "text": "MFA coverage (%) + % privileged accounts under PAM"}, {"id": "C5.K2", "systems": [{"systemId": "C5.S1", "weight": 9}], "text": "Vulnerability aging: % critical patched within SLA; OT compensating controls"}, {"id": "C5.K3", "systems": [{"systemId": "C5.S5", "weight": 8}, {"systemId": "C5.S3", "weight": 8}], "text": "MTTD and MTTR for security incidents (target \u2193)"}, {"id": "C5.K4", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S5", "weight": 6}], "text": "Phishing resilience: click rate \u2193; training completion \u2191"}, {"id": "C5.K5", "systems": [{"systemId": "C5.S2", "weight": 9}], "text": "Audit readiness: # major findings = 0; time to produce evidence \u2193"}, {"id": "C5.K6", "systems": [{"systemId": "C5.S1", "weight": 8}, {"systemId": "C5.S6", "weight": 9}, {"systemId": "C5.S4", "weight": 9}], "text": "Resilience: backup restore success rate; RTO/RPO met in tests"}, {"id": "C6.K1", "systems": [{"systemId": "C6.S1", "weight": 9}, {"systemId": "C6.S6", "weight": 8}], "text": "Wave readiness score (% green) before go\u2011live; # waves delayed for readiness (ok)"}, {"id": "C6.K2", "systems": [{"systemId": "C6.S3", "weight": 9}, {"systemId": "C6.S2", "weight": 8}], "text": "Adoption: training completion; active users; process compliance rate"}, {"id": "C6.K3", "systems": [{"systemId": "C6.S5", "weight": 9}], "text": "Data quality score (master + transactional); inventory accuracy"}, {"id": "C6.K4", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Delivery health: schedule variance, milestone hit rate, change failure rate"}, {"id": "C6.K5", "systems": [{"systemId": "C6.S3", "weight": 6}], "text": "Cost control: burn rate vs budget; run\u2011cost delta tracked"}, {"id": "C6.K6", "systems": [{"systemId": "C6.S1", "weight": 7}, {"systemId": "C6.S4", "weight": 9}], "text": "Operational stability: incident rate during/after releases; downtime minutes"}], "meta": {"generated": "2026-02-10T08:38:30.715462", "sourceDeck": "Navigate the case live: click any item to jump across"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Lead-time too long/variable across Order\u2192Engineering\u2192Supply\u2192Build"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "On-time delivery gaps; late surprises drive expediting \u0026 firefighting"}, {"groupId": "C1", "id": "C1.SC3", "priority": 3, "text": "Inventory/WIP buffers due to limited visibility \u0026 planning discipline"}, {"groupId": "C1", "id": "C1.SC4", "priority": 3, "text": "Cost transparency gaps (standard cost, variances, margin leakage)"}, {"groupId": "C1", "id": "C1.SC5", "priority": 3, "text": "Digital services not yet packaged/scaled (remote support, predictive)"}, {"groupId": "C1", "id": "C1.SC6", "priority": 1, "text": "Customer experience fragmented (3 CRMs); limited pipeline \u0026 service visibility; inconsistent customer master"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Fragmented landscape (multiple ERP/CRM instances; local solutions)"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Point\u2011to\u2011point integrations create fragility and high change cost"}, {"groupId": "C2", "id": "C2.SC3", "priority": 3, "text": "No single trusted data layer for plant-to-board decisions"}, {"groupId": "C2", "id": "C2.SC4", "priority": 3, "text": "OT/IT + IIoT constraints: segmented shop\u2011floor, sensor connectivity, uptime, safety, vendor access"}, {"groupId": "C2", "id": "C2.SC5", "priority": 2, "text": "Cloud + connectivity heterogeneity (incl. Wi\u2011Fi/5G); resilience \u0026 DR not uniform"}, {"groupId": "C2", "id": "C2.SC6", "priority": 3, "text": "Digital services scale needs secure connectivity + reusable patterns"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Multiple ERP cores (3 SAP instances) + local CN system + process variants \u2192 duplication \u0026 friction"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"}, {"groupId": "C3", "id": "C3.SC3", "priority": 3, "text": "Excel workarounds for planning, costing, reporting \u2192 slow decisions and errors"}, {"groupId": "C3", "id": "C3.SC4", "priority": 3, "text": "Limited end\u2011to\u2011end traceability across PLM \u2194 shop\u2011floor \u2194 quality \u2194 service"}, {"groupId": "C3", "id": "C3.SC5", "priority": 3, "text": "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"}, {"groupId": "C3", "id": "C3.SC6", "priority": 3, "text": "SAP program already in motion (partner likely selected) \u2192 need a health-check, not a restart"}, {"groupId": "C4", "id": "C4.SC1", "priority": 1, "text": "IT perceived as reactive; unclear ownership \u2192 slow delivery and \u0027firefighting\u0027"}, {"groupId": "C4", "id": "C4.SC2", "priority": 3, "text": "Decentralised divisions; low trust in group standards \u2192 resistance to harmonisation"}, {"groupId": "C4", "id": "C4.SC3", "priority": 3, "text": "Portfolio noise: no single intake/waterline \u2192 too many priorities at once"}, {"groupId": "C4", "id": "C4.SC4", "priority": 2, "text": "Change capacity constraints; training/adoption often under-funded"}, {"groupId": "C4", "id": "C4.SC5", "priority": 3, "text": "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"}, {"groupId": "C4", "id": "C4.SC6", "priority": 3, "text": "Business/IT misalignment: requirements and outcomes not co\u2011owned end\u2011to\u2011end"}, {"groupId": "C5", "id": "C5.SC1", "priority": 2, "text": "Expanded attack surface (cloud, remote access, supplier connections, IoT)"}, {"groupId": "C5", "id": "C5.SC2", "priority": 3, "text": "OT constraints + legacy devices \u2192 segmentation and patching are hard"}, {"groupId": "C5", "id": "C5.SC3", "priority": 2, "text": "Identity \u0026 privileged access sprawl; inconsistent access governance"}, {"groupId": "C5", "id": "C5.SC4", "priority": 3, "text": "Limited detection/response maturity (logging, SOC, incident routines)"}, {"groupId": "C5", "id": "C5.SC5", "priority": 3, "text": "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"}, {"groupId": "C5", "id": "C5.SC6", "priority": 2, "text": "Third\u2011party risk (partners, integrators) + SAP programme security gates"}, {"groupId": "C6", "id": "C6.SC1", "priority": 3, "text": "If divisions resist standardisation, benefits won\u0027t land (Excel/workarounds persist)"}, {"groupId": "C6", "id": "C6.SC2", "priority": 3, "text": "If data quality is weak, planning and inventory KPIs won\u0027t move"}, {"groupId": "C6", "id": "C6.SC3", "priority": 3, "text": "If we disrupt plants during cutovers, trust is lost and programme stalls"}, {"groupId": "C6", "id": "C6.SC4", "priority": 3, "text": "If scope/customisation grows, costs and timelines explode (clean core violated)"}, {"groupId": "C6", "id": "C6.SC5", "priority": 3, "text": "If vendors/partners under\u2011deliver, knowledge and control erode"}, {"groupId": "C6", "id": "C6.SC6", "priority": 2, "text": "If security/OT constraints are ignored, risk increases during transformation"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I6", "weight": 8}, {"initiativeId": "C1.I5", "weight": 9}], "text": "Core ERP (SAP S/4HANA as system of record)", "title": ""}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 5}], "text": "Planning cockpit (MRP exceptions / APS where needed)", "title": ""}, {"id": "C1.S3", "initiatives": [{"initiativeId": "C1.I3", "weight": 9}, {"initiativeId": "C1.I4", "weight": 9}, {"initiativeId": "C1.I1", "weight": 7}], "text": "MES / Quality execution (critical lines; traceability)", "title": ""}, {"id": "C1.S4", "initiatives": [{"initiativeId": "C1.I2", "weight": 9}], "text": "PLM + Engineering change control (ECR/ECO) integrated", "title": ""}, {"id": "C1.S5", "initiatives": [{"initiativeId": "C1.I1", "weight": 8}, {"initiativeId": "C1.I3", "weight": 9}], "text": "Enterprise data platform + KPI layer (BI, analytics, AI-ready)", "title": ""}, {"id": "C1.S6", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I5", "weight": 10}, {"initiativeId": "C1.I6", "weight": 9}, {"initiativeId": "C1.I3", "weight": 9}], "text": "CRM core (Salesforce 3\u21921) + customer portal + secure remote connectivity / IoT data capture", "title": ""}, {"bullets": ["CRM / sales workflows", "Customer portal", "Service experience"], "id": "C2.S1", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I7", "weight": 7}, {"initiativeId": "C2.I6", "weight": 8}], "text": "", "title": "Experience layer (CRM + customer portal + service)", "type": "system"}, {"bullets": ["Core ERP (SAP S/4HANA)", "PLM (engineering change)", "MES / Quality (shop\u2011floor execution)"], "id": "C2.S2", "initiatives": [{"initiativeId": "C2.I4", "weight": 9}], "text": "", "title": "Business core (standard backbone)", "type": "system"}, {"bullets": ["Finance", "HR", "Other corporate apps"], "id": "C2.S3", "initiatives": [{"initiativeId": "C2.I1", "weight": 7}, {"initiativeId": "C2.I2", "weight": 5}], "text": "", "title": "Corporate applications (Finance / HR / etc.)", "type": "system"}, {"bullets": ["API / integration platform (iPaaS)", "Events / pub\u2011sub", "OT / edge gateways (shop\u2011floor connectivity)"], "id": "C2.S4", "initiatives": [{"initiativeId": "C2.I5", "weight": 8}, {"initiativeId": "C2.I4", "weight": 6}, {"initiativeId": "C2.I1", "weight": 6}], "text": "", "title": "Integration \u0026 event backbone", "type": "system"}, {"bullets": ["Enterprise data platform", "Historian / time\u2011series for OT", "KPI semantic layer", "BI / dashboards"], "id": "C2.S5", "initiatives": [{"initiativeId": "C2.I4", "weight": 8}, {"initiativeId": "C2.I2", "weight": 5}, {"initiativeId": "C2.I6", "weight": 6}, {"initiativeId": "C2.I3", "weight": 8}], "text": "", "title": "Data \u0026 analytics platform", "type": "system"}, {"bullets": ["Hybrid cloud", "Network (LAN / Wi\u2011Fi / 5G)", "OT zones / segmentation foundations", "Disaster recovery"], "id": "C2.S6", "initiatives": [{"initiativeId": "C2.I6", "weight": 5}], "text": "", "title": "Infrastructure foundation", "type": "system"}, {"bullets": ["Identity (MFA / access)", "Central logging / SIEM", "Zone model + monitoring", "Audit evidence"], "id": "C2.S7", "initiatives": [{"initiativeId": "C2.I6", "weight": 8}, {"initiativeId": "C2.I5", "weight": 7}, {"initiativeId": "C2.I1", "weight": 5}], "text": "", "title": "Security \u0026 identity (applies to all layers)", "type": "system"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I3", "weight": 10}, {"initiativeId": "C3.I6", "weight": 9}, {"initiativeId": "C3.I4", "weight": 10}], "text": "SAP S/4HANA as digital core + \u0027clean core\u0027 guardrails (standard first)", "title": ""}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I4", "weight": 5}, {"initiativeId": "C3.I6", "weight": 8}, {"initiativeId": "C3.I2", "weight": 7}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Master data governance \u0026 tooling (workflows, validation, ownership/RACI)", "title": ""}, {"id": "C3.S3", "initiatives": [{"initiativeId": "C3.I3", "weight": 5}, {"initiativeId": "C3.I6", "weight": 5}, {"initiativeId": "C3.I2", "weight": 8}, {"initiativeId": "C3.I1", "weight": 5}], "text": "Integration platform (iPaaS/API/events) + retire point\u2011to\u2011point interfaces", "title": ""}, {"id": "C3.S4", "initiatives": [{"initiativeId": "C3.I3", "weight": 7}], "text": "MES/QMS integration on critical lines to unlock traceability \u0026 COPQ reduction", "title": ""}, {"id": "C3.S5", "initiatives": [{"initiativeId": "C3.I4", "weight": 8}], "text": "Delivery factory: testing, cutover runbooks, rehearsals, training \u0026 hypercare", "title": ""}, {"id": "C3.S6", "initiatives": [{"initiativeId": "C3.I6", "weight": 6}, {"initiativeId": "C3.I5", "weight": 7}], "text": "Partner model + retained Competency Center (architecture, data, security, vendor governance)", "title": ""}, {"id": "C4.S1", "initiatives": [{"initiativeId": "C4.I6", "weight": 5}], "text": "Executive governance: ExCo steering + quarterly value gates + decision log", "title": ""}, {"id": "C4.S2", "initiatives": [{"initiativeId": "C4.I5", "weight": 5}], "text": "Digital investment framework: categories, scoring, waterline, benefits tracking", "title": ""}, {"id": "C4.S3", "initiatives": [{"initiativeId": "C4.I6", "weight": 10}, {"initiativeId": "C4.I1", "weight": 8}, {"initiativeId": "C4.I4", "weight": 10}], "text": "Product \u0026 process ownership (ERP / Data / Security / Service) + RACI", "title": ""}, {"id": "C4.S4", "initiatives": [{"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I6", "weight": 6}], "text": "Service operations system: ITSM + service catalogue + SLA dashboards; \u0027runner/repeater/stranger\u0027 support tiers", "title": ""}, {"id": "C4.S5", "initiatives": [{"initiativeId": "C4.I5", "weight": 8}, {"initiativeId": "C4.I6", "weight": 6}, {"initiativeId": "C4.I2", "weight": 6}, {"initiativeId": "C4.I4", "weight": 5}], "text": "Vendor \u0026 partner governance: managed services towers, SLAs, KPI dashboards, escalation paths", "title": ""}, {"id": "C4.S6", "initiatives": [{"initiativeId": "C4.I4", "weight": 6}, {"initiativeId": "C4.I2", "weight": 8}], "text": "People \u0026 change system: change champions, training academy, incentives, role upgrades (PO, data owners)", "title": ""}, {"id": "C5.S1", "initiatives": [{"initiativeId": "C5.I1", "weight": 7}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I3", "weight": 8}, {"initiativeId": "C5.I6", "weight": 7}], "text": "MFA / Identity platform (SSO, conditional access)", "title": ""}, {"id": "C5.S2", "initiatives": [{"initiativeId": "C5.I1", "weight": 8}, {"initiativeId": "C5.I5", "weight": 7}], "text": "PAM (privileged vault, session recording)", "title": ""}, {"id": "C5.S3", "initiatives": [{"initiativeId": "C5.I5", "weight": 5}, {"initiativeId": "C5.I2", "weight": 7}, {"initiativeId": "C5.I4", "weight": 6}, {"initiativeId": "C5.I3", "weight": 5}], "text": "Endpoint protection (EDR) + device hygiene / patch tooling", "title": ""}, {"id": "C5.S4", "initiatives": [{"initiativeId": "C5.I3", "weight": 7}], "text": "Central logging + SIEM/SOAR + SOC (managed where useful)", "title": ""}, {"id": "C5.S5", "initiatives": [{"initiativeId": "C5.I6", "weight": 6}, {"initiativeId": "C5.I2", "weight": 7}], "text": "Network segmentation (IT/OT zones), firewalls, secure remote access", "title": ""}, {"id": "C5.S6", "initiatives": [{"initiativeId": "C5.I4", "weight": 5}], "text": "Resilience: backup/DR, immutable backups, recovery testing", "title": ""}, {"id": "C6.S1", "initiatives": [{"initiativeId": "C6.I3", "weight": 8}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Programme control tower: PMO + risk register + decision log", "title": ""}, {"id": "C6.S2", "initiatives": [{"initiativeId": "C6.I4", "weight": 10}, {"initiativeId": "C6.I2", "weight": 8}], "text": "Wave readiness scorecard + go/no\u2011go forum", "title": ""}, {"id": "C6.S3", "initiatives": [{"initiativeId": "C6.I4", "weight": 8}, {"initiativeId": "C6.I5", "weight": 6}], "text": "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model", "title": ""}, {"id": "C6.S4", "initiatives": [{"initiativeId": "C6.I1", "weight": 6}], "text": "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack", "title": ""}, {"id": "C6.S5", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I6", "weight": 7}], "text": "Data governance system (owners, quality rules, stewardship tooling)", "title": ""}, {"id": "C6.S6", "initiatives": [{"initiativeId": "C6.I4", "weight": 5}, {"initiativeId": "C6.I5", "weight": 5}, {"initiativeId": "C6.I3", "weight": 6}, {"initiativeId": "C6.I2", "weight": 7}], "text": "Partner performance dashboard + escalation paths (internal Competency Center)", "title": ""}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},
@@ -882,6 +966,18 @@ function preview(type,id){
     state.preview = null;
   } else {
     state.preview = {type,id};
+
+    // Clear graph and flow selections so preview will propagate
+    if (graph.canvas) {
+      graph.selectedNode = null;
+      graph.filteredNodes = null;
+      graph.filteredLinks = null;
+    }
+    if (flow.canvas) {
+      flow.selectedNode = null;
+      flow.filteredNodes = null;
+      flow.filteredLinks = null;
+    }
   }
   renderFocusedDetail();
 }
@@ -892,6 +988,34 @@ function clearSelection(){
   document.querySelectorAll("[data-key].active").forEach(el=>el.classList.remove("active"));
   renderFocusedDetail();
   updateHash();
+
+  // Reset Graph view filter (but don't render if hidden - let view switch handle it)
+  if (graph.canvas) {
+    graph.selectedNode = null;
+    graph.filteredNodes = null;
+    graph.filteredLinks = null;
+    graph.history = [];
+    // Only render if graph view is currently visible
+    const graphView = document.getElementById('graphView');
+    if (graphView && graphView.style.display !== 'none') {
+      layoutGraph();
+      drawGraph();
+      updateGraphUI();
+    }
+  }
+
+  // Reset Flow view filter (but don't render if hidden)
+  if (flow.canvas) {
+    flow.selectedNode = null;
+    flow.filteredNodes = null;
+    flow.filteredLinks = null;
+    // Only render if flow view is currently visible
+    const flowView = document.getElementById('flowView');
+    if (flowView && flowView.style.display !== 'none') {
+      layoutFlowDiagram();
+      drawFlowDiagram();
+    }
+  }
 }
 
 function select(type, id, {autoTab=null, forceSelect=false}={}) {
@@ -918,10 +1042,35 @@ function select(type, id, {autoTab=null, forceSelect=false}={}) {
   renderFocusedDetail();
   updateHash();
 
+  // Clear graph and flow selections so new column selection will propagate
+  // when user switches to those views
+  // BUT: Don't clear if isSyncing is true - that means we're syncing FROM graph/flow
+  // to column view, and the filters are already correctly set
+  if (!isSyncing) {
+    if (graph.canvas) {
+      graph.selectedNode = null;
+      graph.filteredNodes = null;
+      graph.filteredLinks = null;
+    }
+    if (flow.canvas) {
+      flow.selectedNode = null;
+      flow.filteredNodes = null;
+      flow.filteredLinks = null;
+    }
+  }
+
   // Sync with graph view if it's currently active AND not already syncing
   if (state.viewMode === 'graph' && !isSyncing) {
     console.log('Select called with:', type, id, 'viewMode:', state.viewMode);
     syncColumnToGraphView(type, id);
+  }
+
+  // Sync with flow view if it's currently active AND not already syncing
+  if (state.viewMode === 'flow' && !isSyncing) {
+    console.log('Select called - syncing to flow view:', type, id);
+    setTimeout(() => {
+      syncColumnToFlowView(type, id);
+    }, 10);
   }
 }
 
@@ -1501,6 +1650,20 @@ function setInitSeason(season) {
     drawGraph();
     updateGraphUI();
   }
+
+  // Update flow view if it's active
+  if (state.viewMode === 'flow' && flow.canvas) {
+    // Clear selection when season changes
+    flow.selectedNode = null;
+    flow.filteredNodes = null;
+    flow.filteredLinks = null;
+
+    // Rebuild and redraw flow
+    buildFlowData();
+    layoutFlowDiagram();
+    drawFlowDiagram();
+    updateFlowUI();
+  }
 }
 
 function renderInitiativeList() {
@@ -1858,20 +2021,84 @@ function setViewMode(mode) {
   state.viewMode = mode;
   const columnView = byId('columnView');
   const graphView = byId('graphView');
+  const flowView = byId('flowView');
   const btnColumn = byId('btnColumnView');
   const btnGraph = byId('btnGraphView');
+  const btnFlow = byId('btnFlowView');
 
-  if (mode === 'graph') {
+  if (mode === 'flow') {
+    columnView.style.display = 'none';
+    graphView.style.display = 'none';
+    flowView.style.display = 'block';
+    btnColumn.classList.remove('primary');
+    btnGraph.classList.remove('primary');
+    btnFlow.classList.add('primary');
+
+    // Initialize flow if not already done
+    if (!flow.canvas) {
+      console.log('Initializing flow view for first time');
+      initFlowView();
+    }
+
+    // Priority order for syncing to flow view:
+    // 1. Flow view already has selection (preserve it when returning)
+    // 2. Graph view selection (if user was in graph and clicked something)
+    // 3. Column view selection (if user selected something in column view)
+    // 4. No selection - show full flow
+
+    if (flow.selectedNode) {
+      // Flow already has a selection, redraw and fit to view
+      console.log('Flow already has selection, keeping it:', flow.selectedNode.id);
+      drawFlowDiagram();
+      // Auto-fit to view to ensure selection is visible
+      setTimeout(() => {
+        flowFitToView();
+      }, 10);
+    } else if (graph.canvas && graph.selectedNode) {
+      // Sync from graph view selection
+      console.log('Flow view: Syncing from graph selection:', graph.selectedNode.entityId);
+      setTimeout(() => {
+        if (flow.canvas) {
+          syncGraphToFlowView();
+        } else {
+          console.error('Flow canvas not ready after init!');
+        }
+      }, 50);
+    } else {
+      // Check for column selection or preview
+      const itemToSync = state.preview || state.selected;
+      if (itemToSync) {
+        console.log('Flow view: Syncing from column selection:', itemToSync.type, itemToSync.id);
+        setTimeout(() => {
+          syncColumnToFlowView(itemToSync.type, itemToSync.id);
+        }, 50);
+      } else {
+        // No selection, show full flow
+        console.log('Flow view: Showing full unfiltered view');
+        flow.selectedNode = null;
+        flow.filteredNodes = null;
+        flow.filteredLinks = null;
+        if (flow.canvas) {
+          layoutFlowDiagram();
+          drawFlowDiagram();
+          updateFlowUI();
+        }
+      }
+    }
+  } else if (mode === 'graph') {
     columnView.style.display = 'none';
     graphView.style.display = 'block';
+    flowView.style.display = 'none';
     btnColumn.classList.remove('primary');
     btnGraph.classList.add('primary');
+    btnFlow.classList.remove('primary');
 
     console.log('=== SWITCHING TO GRAPH VIEW ===');
     console.log('state.selected:', state.selected);
     console.log('state.preview:', state.preview);
     console.log('graph.canvas exists:', !!graph.canvas);
     console.log('graph.selectedNode:', graph.selectedNode ? graph.selectedNode.id : 'none');
+    console.log('flow.selectedNode:', flow.selectedNode ? flow.selectedNode.id : 'none');
 
     // Initialize graph if not already done
     if (!graph.canvas) {
@@ -1879,31 +2106,84 @@ function setViewMode(mode) {
       renderGraph();
     }
 
-    // Check for either selection or preview (preview takes priority as it's most recent)
-    const itemToSync = state.preview || state.selected;
+    // Priority order for syncing to graph view:
+    // 1. Graph view already has selection (preserve it when returning)
+    // 2. Flow view selection (if user was in flow and clicked something)
+    // 3. Column view selection (if user selected something in column view)
+    // 4. No selection - show full graph
 
-    // Sync column selection/preview to graph when switching to graph view
-    if (itemToSync) {
-      console.log('Switching to graph view with item:', itemToSync.type, itemToSync.id);
+    if (graph.selectedNode) {
+      // Graph already has a selection, redraw and fit to view
+      console.log('Graph already has selection, keeping it:', graph.selectedNode.id);
+      drawGraph();
+      // Auto-fit to view to ensure selection is visible
       setTimeout(() => {
-        console.log('About to call syncColumnToGraphView with:', itemToSync.type, itemToSync.id);
-        syncColumnToGraphView(itemToSync.type, itemToSync.id);
+        graphFitToView();
+      }, 10);
+    } else if (flow.canvas && flow.selectedNode) {
+      // Sync from flow view selection
+      console.log('Graph view: Syncing from flow selection:', flow.selectedNode.id);
+      setTimeout(() => {
+        syncFlowToGraphView();
       }, 10);
     } else {
-      console.log('No item to sync - rendering full graph');
-      // No selection, just render the full graph
-      renderGraph();
+      // Check for column selection or preview
+      const itemToSync = state.preview || state.selected;
+      if (itemToSync) {
+        console.log('Switching to graph view with item:', itemToSync.type, itemToSync.id);
+        setTimeout(() => {
+          console.log('About to call syncColumnToGraphView with:', itemToSync.type, itemToSync.id);
+          syncColumnToGraphView(itemToSync.type, itemToSync.id);
+        }, 10);
+      } else {
+        console.log('No selection anywhere - rendering full graph');
+        // No selection, just render the full graph
+        renderGraph();
+      }
     }
   } else {
     columnView.style.display = 'block';
     graphView.style.display = 'none';
+    flowView.style.display = 'none';
     btnColumn.classList.add('primary');
     btnGraph.classList.remove('primary');
+    btnFlow.classList.remove('primary');
 
-    console.log('Switching to column view - keeping column state unchanged');
+    console.log('Switching to column view');
     console.log('Current state.selected:', state.selected ? `${state.selected.type} ${state.selected.id}` : 'none');
+    console.log('graph.selectedNode:', graph.selectedNode ? graph.selectedNode.entityId : 'none');
+    console.log('flow.selectedNode:', flow.selectedNode ? flow.selectedNode.id : 'none');
 
-    // DON'T sync from graph back to column - keep column view exactly as user left it
+    // Sync from graph or flow to column if there's a selection that differs from column
+    if (!isSyncing) {
+      if (graph.selectedNode) {
+        const graphEntityId = graph.selectedNode.entityId;
+        const columnEntityId = state.selected ? state.selected.id : null;
+        if (graphEntityId !== columnEntityId) {
+          console.log('Column view: Syncing from graph selection');
+          syncGraphToColumnView(graph.selectedNode);
+        }
+      } else if (flow.selectedNode) {
+        const flowEntityId = flow.selectedNode.id;
+        const columnEntityId = state.selected ? state.selected.id : null;
+        if (flowEntityId !== columnEntityId) {
+          console.log('Column view: Syncing from flow selection');
+          const columnType = flow.selectedNode.type === 'challengeGroup' ? 'challengeGroup' :
+                             flow.selectedNode.type === 'challenge' ? 'subChallenge' :
+                             flow.selectedNode.type;
+          const autoTab = flow.selectedNode.type === 'challengeGroup' || flow.selectedNode.type === 'challenge' ? 'challenges' :
+                          flow.selectedNode.type === 'initiative' ? 'initiatives' :
+                          flow.selectedNode.type === 'system' ? 'systems' : 'kpis';
+
+          isSyncing = true;
+          try {
+            select(columnType, flow.selectedNode.id, {forceSelect: true, autoTab: autoTab});
+          } finally {
+            isSyncing = false;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1923,7 +2203,9 @@ let graph = {
   selectedNode: null,  // Currently selected node for filtering
   filteredNodes: null, // Set of visible node IDs when filtered
   filteredLinks: null, // Set of visible links when filtered
-  history: []          // Navigation history stack for back button
+  history: [],         // Navigation history stack for back button
+  fontSize: 1.0,       // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
+  showWeights: false   // Whether to show link weights (disabled by default)
 };
 
 // Get colors from CSS variables
@@ -2186,6 +2468,10 @@ function renderGraph() {
 }
 
 function layoutGraph() {
+  console.log('layoutGraph called - graph.nodes.length:', graph.nodes.length);
+  console.log('layoutGraph - graph.filteredNodes:', graph.filteredNodes ? `Set with ${graph.filteredNodes.size} nodes` : 'null');
+  console.log('layoutGraph - graph.selectedNode:', graph.selectedNode ? graph.selectedNode.id : 'null');
+
   // Vertical layout: rows from top to bottom
   // Groups at top, then challenges, then initiatives, then systems, then KPIs
   const rows = {
@@ -2196,14 +2482,25 @@ function layoutGraph() {
     kpi: { y: 510, nodes: [] }
   };
 
-  // Filter nodes if there's a selection
+  // Filter nodes if there's a filter set (match drawNode behavior)
   let visibleNodes = graph.nodes;
-  if (graph.selectedNode && graph.filteredNodes) {
+  if (graph.filteredNodes) {
     visibleNodes = graph.nodes.filter(n => graph.filteredNodes.has(n.id));
+    console.log('layoutGraph - visibleNodes after filter:', visibleNodes.length, 'nodes');
+  } else {
+    console.log('layoutGraph - no filter, using all', visibleNodes.length, 'nodes');
   }
 
   visibleNodes.forEach(node => {
     rows[node.type].nodes.push(node);
+  });
+
+  console.log('layoutGraph - nodes per row:', {
+    group: rows.group.nodes.length,
+    challenge: rows.challenge.nodes.length,
+    initiative: rows.initiative.nodes.length,
+    system: rows.system.nodes.length,
+    kpi: rows.kpi.nodes.length
   });
 
   // Position nodes in rows with horizontal spacing
@@ -2218,9 +2515,28 @@ function layoutGraph() {
       node.y = row.y;
     });
   });
+
+  // Log sample node positions to see if they're reasonable
+  if (visibleNodes.length > 0 && visibleNodes.length <= 20) {
+    console.log('layoutGraph - sample node positions:', visibleNodes.slice(0, 3).map(n => ({
+      id: n.id,
+      x: n.x,
+      y: n.y
+    })));
+  }
+
+  console.log('layoutGraph - current pan/zoom:', {
+    panX: graph.panX,
+    panY: graph.panY,
+    zoom: graph.zoom
+  });
 }
 
 function drawGraph() {
+  console.log('drawGraph called');
+  console.log('drawGraph - graph.filteredNodes:', graph.filteredNodes ? `Set with ${graph.filteredNodes.size} nodes` : 'null');
+  console.log('drawGraph - graph.filteredLinks:', graph.filteredLinks ? `Set with ${graph.filteredLinks.size} links` : 'null');
+
   const ctx = graph.ctx;
   const canvas = graph.canvas;
 
@@ -2233,14 +2549,20 @@ function drawGraph() {
   ctx.scale(graph.zoom, graph.zoom);
 
   // Draw links first
+  let drawnLinks = 0;
   graph.links.forEach(link => {
-    drawLink(link);
+    const wasDrawn = drawLink(link);
+    if (wasDrawn !== false) drawnLinks++;
   });
+  console.log('drawGraph - drew', drawnLinks, 'links out of', graph.links.length);
 
   // Draw nodes
+  let drawnNodes = 0;
   graph.nodes.forEach(node => {
-    drawNode(node);
+    const wasDrawn = drawNode(node);
+    if (wasDrawn !== false) drawnNodes++;
   });
+  console.log('drawGraph - drew', drawnNodes, 'nodes out of', graph.nodes.length);
 
   ctx.restore();
 }
@@ -2248,12 +2570,12 @@ function drawGraph() {
 function drawLink(link) {
   // Skip if this link is filtered out
   if (graph.filteredLinks && !graph.filteredLinks.has(link)) {
-    return;
+    return false;
   }
 
   const ctx = graph.ctx;
   const weight = link.weight || 5;
-  const thickness = weight; // Direct weight-to-thickness: 1-10px
+  const thickness = graph.showWeights ? weight : 1; // Use weight or 1px based on toggle
 
   // Draw line from bottom of source to top of target (vertical flow)
   const sourceX = link.source.x;
@@ -2286,7 +2608,12 @@ function drawLink(link) {
 function drawNode(node) {
   // Skip if this node is filtered out
   if (graph.filteredNodes && !graph.filteredNodes.has(node.id)) {
-    return;
+    return false;
+  }
+
+  // Check if node has valid position
+  if (!node.x || !node.y) {
+    console.warn('drawNode - node has invalid position:', node.id, 'x:', node.x, 'y:', node.y);
   }
 
   const ctx = graph.ctx;
@@ -2338,14 +2665,17 @@ function drawNode(node) {
 
   // Draw label text inside
   ctx.fillStyle = '#1a1a1a';
-  ctx.font = 'bold 10px sans-serif';
+  const baseFontSize = 10;
+  const fontSize = Math.round(baseFontSize * graph.fontSize);
+  ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
   // Wrap text if needed
   const maxWidth = w - 10;
   const lines = wrapText(ctx, node.label, maxWidth);
-  const lineHeight = 12;
+  const baseLineHeight = 12;
+  const lineHeight = baseLineHeight * graph.fontSize;
   const totalHeight = lines.length * lineHeight;
   const startY = node.y - totalHeight / 2 + lineHeight / 2;
 
@@ -2705,6 +3035,12 @@ function selectGraphNode(node) {
   // This ensures consistent behavior between column and graph view clicks
   syncColumnToGraphView(type, id);
 
+  // Also sync back to column view to update the selection state in the sidebar
+  if (!isSyncing) {
+    console.log('selectGraphNode - syncing back to column view');
+    syncGraphToColumnView(node);
+  }
+
   console.log('=== selectGraphNode done ===');
 
   // Clear the flag after a short delay to allow any pending events to complete
@@ -2816,10 +3152,23 @@ function graphZoomOut() {
   drawGraph();
 }
 
+function graphFontSizeIncrease() {
+  graph.fontSize *= 1.2;
+  graph.fontSize = Math.min(2.5, graph.fontSize);
+  drawGraph();
+}
+
+function graphFontSizeDecrease() {
+  graph.fontSize *= 0.8;
+  graph.fontSize = Math.max(0.6, graph.fontSize);
+  drawGraph();
+}
+
 function graphReset() {
   graph.zoom = 1;
   graph.panX = 0;
   graph.panY = 0;
+  graph.fontSize = 1.0;
   graph.selectedNode = null;
   graph.filteredNodes = null;
   graph.filteredLinks = null;
@@ -2827,6 +3176,11 @@ function graphReset() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+}
+
+function toggleGraphWeights(enabled) {
+  graph.showWeights = enabled;
+  drawGraph();
 }
 
 function graphFitToView() {
@@ -3165,7 +3519,30 @@ function syncColumnToGraphView(type, id) {
         });
       }
 
-      graph.filteredNodes = relatedNodes;
+      // CLEANUP: Remove nodes that don't have any visible links
+      // This prevents orphaned nodes from appearing without connections
+      const nodesWithLinks = new Set();
+      relatedLinks.forEach(link => {
+        nodesWithLinks.add(link.source.id);
+        nodesWithLinks.add(link.target.id);
+      });
+
+      // Only keep nodes that have at least one visible link
+      const cleanedNodes = new Set();
+      relatedNodes.forEach(nodeId => {
+        if (nodesWithLinks.has(nodeId)) {
+          cleanedNodes.add(nodeId);
+        } else {
+          console.log('CLEANUP: Removing orphaned node:', nodeId);
+        }
+      });
+
+      console.log('Before cleanup: relatedNodes =', relatedNodes.size, ', relatedLinks =', relatedLinks.size);
+      console.log('After cleanup: cleanedNodes =', cleanedNodes.size);
+      console.log('Nodes in cleanedNodes:', Array.from(cleanedNodes));
+      console.log('Links in relatedLinks:', relatedLinks.size, 'links');
+
+      graph.filteredNodes = cleanedNodes;
       graph.filteredLinks = relatedLinks;
 
       layoutGraph();
@@ -3176,12 +3553,1281 @@ function syncColumnToGraphView(type, id) {
       setTimeout(() => {
         graphFitToView();
       }, 50);
+
+      // Don't auto-sync to flow here - only sync when user switches to flow view
+      // This prevents issues with flow not being initialized yet
     } else {
       console.log('Node not found in graph:', nodeType, id);
     }
   } finally {
     console.log('syncColumnToGraphView - resetting isSyncing to FALSE');
     isSyncing = false;
+  }
+}
+
+/* ========================================
+   SHARED FILTERING LOGIC
+   ======================================== */
+
+// Compute related entities based on type and ID
+// Returns {relatedIds: Set, relatedLinks: Set} where links are identified by source-target pairs
+function computeRelatedEntities(entityType, entityId, allLinks) {
+  const relatedIds = new Set([entityId]);
+  const relatedLinks = new Set();
+
+  // Helper function to safely extract ID from link source/target
+  // Handles both string IDs (Flow view) and object IDs (Graph view)
+  function getLinkId(linkPart) {
+    if (!linkPart) return null;
+    if (typeof linkPart === 'string') return linkPart;
+    if (linkPart.id) return linkPart.id;
+    return null;
+  }
+
+  if (entityType === 'challengeGroup') {
+    // Downstream: challengeGroup -> challenges -> initiatives -> systems -> kpis
+    const challenges = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return; // Skip malformed links
+      if (sourceId === entityId) {
+        challenges.add(targetId);
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+
+    const initiatives = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (challenges.has(sourceId)) {
+        initiatives.add(targetId);
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+
+    const systems = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (initiatives.has(sourceId)) {
+        systems.add(targetId);
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (systems.has(sourceId)) {
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+  } else if (entityType === 'challenge' || entityType === 'subChallenge') {
+    // Upstream: challenge group
+    // Downstream: challenge -> initiatives -> systems -> kpis
+
+    console.log('computeRelatedEntities for challenge:', entityId);
+    console.log('Total links to check:', allLinks.length);
+
+    // Debug: Show sample links involving this challenge
+    const sampleLinks = allLinks.filter(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      return sourceId === entityId || targetId === entityId;
+    }).slice(0, 5);
+    console.log('Sample links involving', entityId, ':', sampleLinks.map(l => ({
+      source: getLinkId(l.source),
+      target: getLinkId(l.target)
+    })));
+
+    // Find parent challenge group
+    let foundParent = false;
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (targetId === entityId) {
+        console.log('Found parent link! source:', sourceId, 'target:', targetId);
+        relatedIds.add(sourceId); // Add the challenge group
+        relatedLinks.add(link);
+        foundParent = true;
+      }
+    });
+    console.log('Found parent challenge group?', foundParent);
+
+    // If no parent found, log links where target could match
+    if (!foundParent) {
+      console.log('Looking for links where target matches:', entityId);
+      const possibleParents = allLinks.filter(link => {
+        const targetId = getLinkId(link.target);
+        return targetId && targetId.includes(entityId.split('.')[1]); // e.g., SC1
+      }).slice(0, 3);
+      console.log('Possible parent links:', possibleParents.map(l => ({
+        source: getLinkId(l.source),
+        target: getLinkId(l.target),
+        link: l
+      })));
+    }
+
+    const initiatives = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (sourceId === entityId) {
+        console.log('Found initiative link! source:', sourceId, 'target:', targetId);
+        initiatives.add(targetId);
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+    console.log('Found', initiatives.size, 'initiatives:', Array.from(initiatives));
+
+    const systems = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (initiatives.has(sourceId)) {
+        systems.add(targetId);
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+    console.log('Found', systems.size, 'systems:', Array.from(systems));
+
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (systems.has(sourceId)) {
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+    console.log('Final relatedIds for challenge:', Array.from(relatedIds));
+  } else if (entityType === 'initiative') {
+    // Upstream: challenges + challenge groups; Downstream: systems, kpis
+    const challenges = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (targetId === entityId || targetId.endsWith('-' + entityId)) {
+        challenges.add(sourceId);
+        relatedIds.add(sourceId);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find parent challenge groups for these challenges
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (challenges.has(targetId)) {
+        relatedIds.add(sourceId); // Add the challenge group
+        relatedLinks.add(link);
+      }
+    });
+
+    const systems = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (sourceId === entityId || sourceId.endsWith('-' + entityId)) {
+        systems.add(targetId);
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (systems.has(sourceId)) {
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+  } else if (entityType === 'system') {
+    // Upstream: initiatives, challenges, challenge groups; Downstream: kpis
+    const initiatives = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (targetId === entityId || targetId.endsWith('-' + entityId)) {
+        initiatives.add(sourceId);
+        relatedIds.add(sourceId);
+        relatedLinks.add(link);
+      }
+    });
+
+    const challenges = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (initiatives.has(targetId)) {
+        challenges.add(sourceId);
+        relatedIds.add(sourceId);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find parent challenge groups
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (challenges.has(targetId)) {
+        relatedIds.add(sourceId); // Add the challenge group
+        relatedLinks.add(link);
+      }
+    });
+
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (sourceId === entityId || sourceId.endsWith('-' + entityId)) {
+        relatedIds.add(targetId);
+        relatedLinks.add(link);
+      }
+    });
+  } else if (entityType === 'kpi') {
+    // Upstream: systems, initiatives, challenges
+    const systems = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (targetId === entityId || targetId.endsWith('-' + entityId)) {
+        systems.add(sourceId);
+        relatedIds.add(sourceId);
+        relatedLinks.add(link);
+      }
+    });
+
+    const initiatives = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (systems.has(targetId)) {
+        initiatives.add(sourceId);
+        relatedIds.add(sourceId);
+        relatedLinks.add(link);
+      }
+    });
+
+    const challenges = new Set();
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (initiatives.has(targetId)) {
+        challenges.add(sourceId);
+        relatedIds.add(sourceId);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find parent challenge groups
+    allLinks.forEach(link => {
+      const sourceId = getLinkId(link.source);
+      const targetId = getLinkId(link.target);
+      if (!sourceId || !targetId) return;
+      if (challenges.has(targetId)) {
+        relatedIds.add(sourceId); // Add the challenge group
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  return { relatedIds, relatedLinks };
+}
+
+/* ========================================
+   FLOW VIEW (SANKEY DIAGRAM)
+   ======================================== */
+
+const flow = {
+  canvas: null,
+  ctx: null,
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  nodes: [],
+  links: [],
+  hovering: null,
+  selectedNode: null,
+  filteredNodes: null,
+  filteredLinks: null,
+  colors: {},    // Cache for colors
+  fontSize: 1.0, // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
+  showWeights: false // Whether to show link weights (disabled by default)
+};
+
+function initFlowView() {
+  const canvas = document.getElementById('flowCanvas');
+  if (!canvas) return;
+
+  flow.canvas = canvas;
+  flow.ctx = canvas.getContext('2d');
+
+  // Set actual canvas size to match display size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  flow.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  // Cache colors once at initialization
+  flow.colors = {
+    group: getComputedStyle(document.documentElement).getPropertyValue('--graph-group').trim(),
+    challenge: getComputedStyle(document.documentElement).getPropertyValue('--c-challenge').trim(),
+    initiative: getComputedStyle(document.documentElement).getPropertyValue('--c-initiative').trim(),
+    system: getComputedStyle(document.documentElement).getPropertyValue('--c-system').trim(),
+    kpi: getComputedStyle(document.documentElement).getPropertyValue('--c-kpi').trim()
+  };
+
+  console.log('Flow colors initialized:', flow.colors);
+
+  buildFlowData();
+  layoutFlowDiagram();
+  drawFlowDiagram();
+  setupFlowInteractions();
+  updateFlowUI();
+}
+
+function buildFlowData() {
+  flow.nodes = [];
+  flow.links = [];
+
+  // Filter initiatives by season first
+  let filteredInitiatives = DATA.initiatives;
+  if (state.initSeason !== "ALL") {
+    filteredInitiatives = DATA.initiatives.filter(i => i.season === state.initSeason);
+    console.log('Flow view filtered to season', state.initSeason, ':', filteredInitiatives.length, 'initiatives');
+  }
+
+  // Build nodes for each column
+  // Column 0: Challenge Groups (C1, C2, C3...)
+  const challengeGroups = DATA.challengeGroups.map(cg => ({
+    id: cg.id,
+    label: cg.title,
+    type: 'challengeGroup',
+    column: 0,
+    value: 0
+  }));
+
+  // Column 1: Sub-Challenges
+  const challenges = DATA.subChallenges.map(sc => ({
+    id: sc.id,
+    label: sc.text,
+    type: 'challenge',
+    column: 1,
+    value: 0 // Will be calculated from links
+  }));
+
+  // Column 2: Initiatives (filtered by season)
+  const initiatives = filteredInitiatives.map(init => ({
+    id: init.id,
+    label: init.text,
+    type: 'initiative',
+    column: 2,
+    value: 0
+  }));
+
+  // Column 3: Systems
+  const systems = DATA.systems.map(sys => ({
+    id: sys.id,
+    label: sys.title || sys.text,
+    type: 'system',
+    column: 3,
+    value: 0
+  }));
+
+  // Column 4: KPIs
+  const kpis = DATA.kpis.map(kpi => ({
+    id: kpi.id,
+    label: kpi.text,
+    type: 'kpi',
+    column: 4,
+    value: 0
+  }));
+
+  flow.nodes = [...challengeGroups, ...challenges, ...initiatives, ...systems, ...kpis];
+
+  // Build links: Challenge Group -> Sub-Challenge
+  DATA.subChallenges.forEach(sc => {
+    const link = {
+      source: sc.groupId,  // Fixed: Use camelCase field name from Python conversion
+      target: sc.id,
+      value: 3 // Lower weight for group→challenge links
+    };
+    flow.links.push(link);
+
+    // Debug: Log first few group->challenge links
+    if (flow.links.length <= 3) {
+      console.log('Created group->challenge link:', link.source, '->', link.target);
+    }
+  });
+
+  // Build links: Challenge -> Initiative (only for filtered initiatives)
+  filteredInitiatives.forEach(init => {
+    if (init.challenges && init.challenges.length > 0) {
+      init.challenges.forEach(link => {
+        flow.links.push({
+          source: link.challengeId,
+          target: init.id,
+          value: link.weight || 5,
+          impact: link.impact || 'M'
+        });
+      });
+    }
+  });
+
+  // Build links: Initiative -> System
+  DATA.systems.forEach(sys => {
+    if (sys.initiatives && sys.initiatives.length > 0) {
+      sys.initiatives.forEach(link => {
+        flow.links.push({
+          source: link.initiativeId,
+          target: sys.id,
+          value: link.weight || 5
+        });
+      });
+    }
+  });
+
+  // Build links: System -> KPI
+  DATA.kpis.forEach(kpi => {
+    if (kpi.systems && kpi.systems.length > 0) {
+      kpi.systems.forEach(link => {
+        flow.links.push({
+          source: link.systemId,
+          target: kpi.id,
+          value: link.weight || 5
+        });
+      });
+    }
+  });
+
+  // If season filter is active, only include nodes that are connected
+  if (state.initSeason !== "ALL") {
+    const connectedNodeIds = new Set();
+
+    // Add all filtered initiative nodes
+    filteredInitiatives.forEach(init => {
+      connectedNodeIds.add(init.id);
+    });
+
+    // Add connected challenges (upstream from initiatives)
+    flow.links.forEach(link => {
+      if (connectedNodeIds.has(link.target)) {
+        connectedNodeIds.add(link.source);
+      }
+    });
+
+    // Add connected systems (downstream from initiatives)
+    flow.links.forEach(link => {
+      if (connectedNodeIds.has(link.source)) {
+        connectedNodeIds.add(link.target);
+      }
+    });
+
+    // Add connected KPIs (downstream from systems)
+    const systemIds = new Set();
+    flow.links.forEach(link => {
+      if (link.source.startsWith && !link.source.startsWith('C') && connectedNodeIds.has(link.source)) {
+        systemIds.add(link.source);
+      }
+    });
+    flow.links.forEach(link => {
+      if (systemIds.has(link.source)) {
+        connectedNodeIds.add(link.target);
+      }
+    });
+
+    // Filter nodes to only include connected ones
+    flow.nodes = flow.nodes.filter(node => connectedNodeIds.has(node.id));
+
+    // Filter links to only include those between connected nodes
+    flow.links = flow.links.filter(link =>
+      connectedNodeIds.has(link.source) && connectedNodeIds.has(link.target)
+    );
+
+    console.log('Flow view after season filter:', flow.nodes.length, 'nodes,', flow.links.length, 'links');
+  }
+
+  // Calculate node values (sum of incoming/outgoing links)
+  flow.nodes.forEach(node => {
+    const incoming = flow.links.filter(l => l.target === node.id).reduce((sum, l) => sum + l.value, 0);
+    const outgoing = flow.links.filter(l => l.source === node.id).reduce((sum, l) => sum + l.value, 0);
+    node.value = Math.max(incoming, outgoing, 1); // At least 1
+  });
+}
+
+function layoutFlowDiagram() {
+  const canvas = flow.canvas;
+  const padding = 80;
+  const columnWidth = (canvas.width - padding * 2) / 5;
+  const columnSpacing = columnWidth;
+
+  // Determine which nodes to layout (filtered or all)
+  const nodesToLayout = flow.filteredNodes
+    ? flow.nodes.filter(n => flow.filteredNodes.has(n.id))
+    : flow.nodes;
+
+  // Group nodes by column (now 5 columns)
+  const columns = [[], [], [], [], []];
+  nodesToLayout.forEach(node => {
+    columns[node.column].push(node);
+  });
+
+  // Layout each column - only layout columns that have visible nodes
+  columns.forEach((colNodes, colIndex) => {
+    if (colNodes.length === 0) return; // Skip empty columns
+
+    const totalValue = colNodes.reduce((sum, n) => sum + n.value, 0);
+    const availableHeight = canvas.height - padding * 2;
+    const spacing = 20;
+    const totalSpacing = spacing * (colNodes.length - 1);
+
+    // Calculate scale, but set reasonable min/max height for nodes
+    const minNodeHeight = 30;  // Minimum height per node
+    const maxNodeHeight = 150; // Maximum height per node
+    let scale = (availableHeight - totalSpacing) / Math.max(totalValue, 1);
+
+    // Check if this would make nodes too big or too small
+    const avgNodeHeight = (colNodes.reduce((sum, n) => sum + n.value * scale, 0)) / colNodes.length;
+    if (avgNodeHeight > maxNodeHeight) {
+      // Nodes would be too big, use max height instead
+      scale = maxNodeHeight / (totalValue / colNodes.length);
+    } else if (avgNodeHeight < minNodeHeight) {
+      // Nodes would be too small, use min height instead
+      scale = minNodeHeight / (totalValue / colNodes.length);
+    }
+
+    let y = padding;
+    colNodes.forEach(node => {
+      node.x = padding + colIndex * columnSpacing + columnWidth / 2;
+      node.y = y;
+      node.height = Math.max(minNodeHeight, Math.min(maxNodeHeight, node.value * scale));
+      node.width = 40;
+      y += node.height + spacing;
+    });
+  });
+}
+
+function drawFlowDiagram() {
+  const ctx = flow.ctx;
+  const canvas = flow.canvas;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+
+  // Apply zoom and pan
+  ctx.translate(flow.panX, flow.panY);
+  ctx.scale(flow.zoom, flow.zoom);
+
+  // Draw links first (behind nodes)
+  flow.links.forEach(link => {
+    const sourceNode = flow.nodes.find(n => n.id === link.source);
+    const targetNode = flow.nodes.find(n => n.id === link.target);
+
+    if (!sourceNode || !targetNode) return;
+
+    // Skip if filtered out
+    if (flow.filteredLinks && !flow.filteredLinks.has(link)) return;
+
+    const isHovered = flow.hovering && (flow.hovering.source === link.source && flow.hovering.target === link.target);
+
+    // Calculate link thickness based on value and showWeights toggle
+    let thickness;
+    if (flow.showWeights) {
+      const maxWeight = 10;
+      const minThickness = 2;
+      const maxThickness = 30;
+      thickness = minThickness + (link.value / maxWeight) * (maxThickness - minThickness);
+    } else {
+      thickness = 1; // Fixed 1px thickness when weights are hidden
+    }
+
+    // Get colors for source and target nodes (use cached colors)
+    let sourceColor, targetColor;
+
+    if (sourceNode.type === 'challengeGroup') sourceColor = flow.colors.group;
+    else if (sourceNode.type === 'challenge') sourceColor = flow.colors.challenge;
+    else if (sourceNode.type === 'initiative') sourceColor = flow.colors.initiative;
+    else if (sourceNode.type === 'system') sourceColor = flow.colors.system;
+    else sourceColor = flow.colors.kpi;
+
+    if (targetNode.type === 'challengeGroup') targetColor = flow.colors.group;
+    else if (targetNode.type === 'challenge') targetColor = flow.colors.challenge;
+    else if (targetNode.type === 'initiative') targetColor = flow.colors.initiative;
+    else if (targetNode.type === 'system') targetColor = flow.colors.system;
+    else targetColor = flow.colors.kpi;
+
+    // Create gradient from source to target
+    const startX = sourceNode.x + sourceNode.width / 2;
+    const startY = sourceNode.y + sourceNode.height / 2;
+    const endX = targetNode.x - targetNode.width / 2;
+    const endY = targetNode.y + targetNode.height / 2;
+
+    const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+    gradient.addColorStop(0, isHovered ? sourceColor : sourceColor + '80');
+    gradient.addColorStop(1, isHovered ? targetColor : targetColor + '80');
+
+    // Draw bezier curve
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+
+    const controlX1 = sourceNode.x + (targetNode.x - sourceNode.x) * 0.5;
+    const controlY1 = sourceNode.y + sourceNode.height / 2;
+    const controlX2 = sourceNode.x + (targetNode.x - sourceNode.x) * 0.5;
+    const controlY2 = targetNode.y + targetNode.height / 2;
+
+    ctx.bezierCurveTo(
+      controlX1, controlY1,
+      controlX2, controlY2,
+      endX, endY
+    );
+
+    ctx.lineWidth = thickness;
+    ctx.strokeStyle = gradient;
+    ctx.stroke();
+  });
+
+  // Draw nodes
+  flow.nodes.forEach(node => {
+    // Skip if filtered out
+    if (flow.filteredNodes && !flow.filteredNodes.has(node.id)) return;
+
+    const isHovered = flow.hovering && flow.hovering.id === node.id;
+    const isSelected = flow.selectedNode && flow.selectedNode.id === node.id;
+
+    // Use cached colors
+    let color;
+    if (node.type === 'challengeGroup') color = flow.colors.group;
+    else if (node.type === 'challenge') color = flow.colors.challenge;
+    else if (node.type === 'initiative') color = flow.colors.initiative;
+    else if (node.type === 'system') color = flow.colors.system;
+    else color = flow.colors.kpi;
+
+    // Draw small colored circle/dot instead of big box
+    const dotRadius = isSelected ? 8 : (isHovered ? 6 : 5);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y + node.height / 2, dotRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw white border on hover or selection
+    if (isSelected) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Draw outer glow ring for selected node
+      ctx.beginPath();
+      ctx.arc(node.x, node.y + node.height / 2, dotRadius + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (isHovered) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Draw label with background when hovered or selected
+    const baseFontSize = (isSelected || isHovered) ? 11 : 10;
+    const fontSize = Math.round(baseFontSize * flow.fontSize);
+    const fontWeight = (isSelected || isHovered) ? 'bold' : 'normal';
+    ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+    ctx.textAlign = node.column < 3 ? 'right' : 'left';
+    const textX = node.column < 3 ? node.x - 15 : node.x + 15;
+    const textY = node.y + node.height / 2 + 4;
+
+    // For challenge GROUPS, show just the ID (C1, C2, C3...)
+    // For everything else, show the full label
+    let displayLabel;
+    if (node.type === 'challengeGroup') {
+      // Show just the ID for challenge groups (e.g., "C1", "C2")
+      displayLabel = node.id;
+    } else {
+      // For sub-challenges, initiatives, systems, KPIs: show full text (truncated if needed)
+      displayLabel = node.label.length > 30 ? node.label.substring(0, 30) + '...' : node.label;
+    }
+
+    // Draw background highlight when hovering or selected to make it clear
+    if (isSelected || isHovered) {
+      const textMetrics = ctx.measureText(displayLabel);
+      const padding = 4;
+      let bgX, bgWidth;
+
+      if (node.column < 3) {
+        // Text on left
+        bgX = textX - textMetrics.width - padding;
+        bgWidth = textMetrics.width + padding * 2;
+      } else {
+        // Text on right
+        bgX = textX - padding;
+        bgWidth = textMetrics.width + padding * 2;
+      }
+
+      ctx.fillStyle = isSelected ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)';
+      ctx.fillRect(bgX, textY - 10, bgWidth, 16);
+    }
+
+    ctx.fillStyle = (isSelected || isHovered) ? '#ffffff' : '#e8eefc';
+    ctx.fillText(displayLabel, textX, textY);
+  });
+
+  ctx.restore();
+}
+
+function findFlowNodeAt(x, y) {
+  // Check if clicking on a visible node
+  const nodesToCheck = flow.filteredNodes
+    ? flow.nodes.filter(n => flow.filteredNodes.has(n.id))
+    : flow.nodes;
+
+  return nodesToCheck.find(node => {
+    // Expand hitbox to include dot and text label area
+    const dotRadius = 10;
+    const textPadding = 150;
+    let hitboxLeft, hitboxRight;
+
+    if (node.column < 3) {
+      // Text on left side, dot on right
+      hitboxLeft = node.x - textPadding;
+      hitboxRight = node.x + dotRadius;
+    } else {
+      // Text on right side, dot on left
+      hitboxLeft = node.x - dotRadius;
+      hitboxRight = node.x + textPadding;
+    }
+
+    const nodeCenter = node.y + node.height / 2;
+    const verticalPadding = 15;
+
+    return x >= hitboxLeft &&
+           x <= hitboxRight &&
+           y >= nodeCenter - verticalPadding &&
+           y <= nodeCenter + verticalPadding;
+  });
+}
+
+function setupFlowInteractions() {
+  const canvas = flow.canvas;
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+  let clickStart = { x: 0, y: 0, time: 0 };
+
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - flow.panX) / flow.zoom;
+    const y = (e.clientY - rect.top - flow.panY) / flow.zoom;
+
+    clickStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+
+    // Check if clicking on a node
+    const node = findFlowNodeAt(x, y);
+    if (!node) {
+      isDragging = true;
+      dragStart = { x: e.clientX - flow.panX, y: e.clientY - flow.panY };
+      canvas.style.cursor = 'grabbing';
+    }
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - flow.panX) / flow.zoom;
+    const y = (e.clientY - rect.top - flow.panY) / flow.zoom;
+
+    if (isDragging) {
+      flow.panX = e.clientX - dragStart.x;
+      flow.panY = e.clientY - dragStart.y;
+      updateFlowTooltip(null); // Hide tooltip when panning
+      drawFlowDiagram();
+    } else {
+      // Hover detection
+      const node = findFlowNodeAt(x, y);
+      if (node !== flow.hovering) {
+        flow.hovering = node;
+        canvas.style.cursor = node ? 'pointer' : 'grab';
+        drawFlowDiagram();
+      }
+      // Update tooltip
+      if (node) {
+        updateFlowTooltip(node, e.clientX, e.clientY);
+      } else {
+        updateFlowTooltip(null);
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseup', (e) => {
+    const timeDiff = Date.now() - clickStart.time;
+    const distMoved = Math.sqrt(
+      Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+    );
+
+    // If it's a quick click without much movement, treat as node selection
+    if (timeDiff < 300 && distMoved < 5) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left - flow.panX) / flow.zoom;
+      const y = (e.clientY - rect.top - flow.panY) / flow.zoom;
+      const node = findFlowNodeAt(x, y);
+
+      if (node) {
+        console.log('Selecting flow node:', node.id);
+        selectFlowNode(node.id);
+      }
+    }
+
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    isDragging = false;
+    flow.hovering = null;
+    canvas.style.cursor = 'grab';
+    updateFlowTooltip(null);
+    drawFlowDiagram();
+  });
+
+  // Touch support for mobile devices
+  let touches = [];
+  let lastTouchDistance = 0;
+  let touchStart = { x: 0, y: 0, time: 0 };
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    touches = Array.from(e.touches);
+
+    if (touches.length === 1) {
+      const touch = touches[0];
+      const rect = canvas.getBoundingClientRect();
+      touchStart = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now()
+      };
+
+      const x = (touch.clientX - rect.left - flow.panX) / flow.zoom;
+      const y = (touch.clientY - rect.top - flow.panY) / flow.zoom;
+
+      const node = findFlowNodeAt(x, y);
+      if (!node) {
+        isDragging = true;
+        dragStart = { x: touch.clientX - flow.panX, y: touch.clientY - flow.panY };
+      }
+    } else if (touches.length === 2) {
+      isDragging = false;
+      lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    touches = Array.from(e.touches);
+
+    if (touches.length === 1 && isDragging) {
+      const touch = touches[0];
+      flow.panX = touch.clientX - dragStart.x;
+      flow.panY = touch.clientY - dragStart.y;
+      drawFlowDiagram();
+    } else if (touches.length === 2) {
+      const currentDistance = getTouchDistance(touches[0], touches[1]);
+
+      if (lastTouchDistance > 0) {
+        const scaleFactor = currentDistance / lastTouchDistance;
+        const oldZoom = flow.zoom;
+        flow.zoom *= scaleFactor;
+        flow.zoom = Math.max(0.3, Math.min(3, flow.zoom));
+
+        const rect = canvas.getBoundingClientRect();
+        const centerX = (touches[0].clientX + touches[1].clientX) / 2 - rect.left;
+        const centerY = (touches[0].clientY + touches[1].clientY) / 2 - rect.top;
+
+        const zoomChange = flow.zoom / oldZoom;
+        flow.panX = centerX - (centerX - flow.panX) * zoomChange;
+        flow.panY = centerY - (centerY - flow.panY) * zoomChange;
+
+        drawFlowDiagram();
+      }
+
+      lastTouchDistance = currentDistance;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+
+    const timeDiff = Date.now() - touchStart.time;
+
+    if (touches.length === 1 && timeDiff < 300) {
+      const touch = touches[0];
+      const distMoved = Math.sqrt(
+        Math.pow(touch.clientX - touchStart.x, 2) +
+        Math.pow(touch.clientY - touchStart.y, 2)
+      );
+
+      if (distMoved < 10) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (touch.clientX - rect.left - flow.panX) / flow.zoom;
+        const y = (touch.clientY - rect.top - flow.panY) / flow.zoom;
+        const node = findFlowNodeAt(x, y);
+
+        if (node) {
+          selectFlowNode(node.id);
+        }
+      }
+    }
+
+    touches = Array.from(e.touches);
+    if (touches.length === 0) {
+      isDragging = false;
+      lastTouchDistance = 0;
+    } else if (touches.length === 1) {
+      lastTouchDistance = 0;
+      const touch = touches[0];
+      dragStart = { x: touch.clientX - flow.panX, y: touch.clientY - flow.panY };
+    }
+  }, { passive: false });
+
+  function getTouchDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Mouse wheel zoom for desktop
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const oldZoom = flow.zoom;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    flow.zoom *= delta;
+    flow.zoom = Math.max(0.3, Math.min(3, flow.zoom));
+
+    const zoomChange = flow.zoom / oldZoom;
+    flow.panX = mouseX - (mouseX - flow.panX) * zoomChange;
+    flow.panY = mouseY - (mouseY - flow.panY) * zoomChange;
+
+    drawFlowDiagram();
+  }, { passive: false });
+}
+
+function updateFlowTooltip(node, mouseX, mouseY) {
+  const tooltip = document.getElementById('flowTooltip');
+
+  if (!node) {
+    tooltip.style.display = 'none';
+    return;
+  }
+
+  tooltip.textContent = node.label;
+  tooltip.style.display = 'block';
+
+  const canvas = document.getElementById('flowCanvas');
+  const canvasRect = canvas.getBoundingClientRect();
+  const offsetX = 15;
+  const offsetY = 15;
+
+  let tooltipX = mouseX - canvasRect.left + offsetX;
+  let tooltipY = mouseY - canvasRect.top + offsetY;
+
+  const tooltipRect = tooltip.getBoundingClientRect();
+  if (tooltipX + tooltipRect.width > canvasRect.width) {
+    tooltipX = mouseX - canvasRect.left - tooltipRect.width - offsetX;
+  }
+  if (tooltipY + tooltipRect.height > canvasRect.height) {
+    tooltipY = mouseY - canvasRect.top - tooltipRect.height - offsetY;
+  }
+
+  tooltip.style.left = tooltipX + 'px';
+  tooltip.style.top = tooltipY + 'px';
+}
+
+function flowZoomIn() {
+  flow.zoom = Math.min(flow.zoom * 1.2, 3);
+  drawFlowDiagram();
+}
+
+function flowZoomOut() {
+  flow.zoom = Math.max(flow.zoom / 1.2, 0.3);
+  drawFlowDiagram();
+}
+
+function flowFontSizeIncrease() {
+  flow.fontSize *= 1.2;
+  flow.fontSize = Math.min(2.5, flow.fontSize);
+  drawFlowDiagram();
+}
+
+function flowFontSizeDecrease() {
+  flow.fontSize *= 0.8;
+  flow.fontSize = Math.max(0.6, flow.fontSize);
+  drawFlowDiagram();
+}
+
+function flowReset() {
+  flow.zoom = 1;
+  flow.panX = 0;
+  flow.panY = 0;
+  flow.fontSize = 1.0;
+  flow.selectedNode = null;
+  flow.filteredNodes = null;
+  flow.filteredLinks = null;
+  layoutFlowDiagram();
+  drawFlowDiagram();
+  updateFlowUI();
+}
+
+function toggleFlowWeights(enabled) {
+  flow.showWeights = enabled;
+  drawFlowDiagram();
+}
+
+function flowFitToView() {
+  // Get visible nodes (filtered or all)
+  const visibleNodes = flow.nodes.filter(node => {
+    if (flow.filteredNodes) {
+      return flow.filteredNodes.has(node.id);
+    }
+    return true;
+  });
+
+  if (visibleNodes.length === 0) return;
+
+  // Calculate bounding box of visible nodes
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+
+  visibleNodes.forEach(node => {
+    const left = node.x;
+    const right = node.x;
+    const top = node.y;
+    const bottom = node.y + node.height;
+
+    minX = Math.min(minX, left);
+    maxX = Math.max(maxX, right);
+    minY = Math.min(minY, top);
+    maxY = Math.max(maxY, bottom);
+  });
+
+  // Add padding
+  const padding = 100;
+  minX -= padding;
+  maxX += padding;
+  minY -= padding;
+  maxY += padding;
+
+  // Calculate content size
+  const contentWidth = maxX - minX;
+  const contentHeight = maxY - minY;
+
+  // Get canvas size (in logical pixels, not device pixels)
+  const canvas = flow.canvas;
+  const rect = canvas.getBoundingClientRect();
+  const canvasWidth = rect.width;
+  const canvasHeight = rect.height;
+
+  // Calculate zoom to fit
+  const zoomX = canvasWidth / contentWidth;
+  const zoomY = canvasHeight / contentHeight;
+  const newZoom = Math.min(zoomX, zoomY, 3); // Cap at max zoom of 3
+
+  // Calculate center of content
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  // Calculate pan to center the content
+  flow.zoom = newZoom;
+  flow.panX = canvasWidth / 2 - centerX * newZoom;
+  flow.panY = canvasHeight / 2 - centerY * newZoom;
+
+  drawFlowDiagram();
+}
+
+function updateFlowUI() {
+  // Update selection info display
+  const selectionInfo = byId('flowSelectionInfo');
+  const subtitle = byId('flowSubtitle');
+
+  if (selectionInfo) {
+    if (flow.selectedNode) {
+      const label = flow.selectedNode.label;
+      const nodeTypeLabel = {
+        'challengeGroup': 'Group',
+        'challenge': 'Challenge',
+        'initiative': 'Initiative',
+        'system': 'System',
+        'kpi': 'KPI'
+      }[flow.selectedNode.type] || flow.selectedNode.type;
+
+      selectionInfo.innerHTML = `<strong>Selected ${nodeTypeLabel}:</strong> <span class="chip mono">${esc(flow.selectedNode.id)}</span> ${esc(label)}`;
+      selectionInfo.style.display = 'block';
+    } else {
+      selectionInfo.style.display = 'none';
+    }
+  }
+
+  // Update subtitle to show season filter
+  if (subtitle) {
+    const baseText = "Visualize relationship strength through flow thickness";
+    if (state.initSeason !== "ALL") {
+      subtitle.textContent = `${baseText} • Filtered by ${state.initSeason}`;
+    } else {
+      subtitle.textContent = baseText;
+    }
+  }
+}
+
+function selectFlowNode(nodeId) {
+  console.log('selectFlowNode called with nodeId:', nodeId);
+  const node = flow.nodes.find(n => n.id === nodeId);
+  if (!node) {
+    console.log('Node not found in flow:', nodeId);
+    console.log('Available flow node IDs:', flow.nodes.map(n => n.id).slice(0, 10));
+    flow.selectedNode = null;
+    flow.filteredNodes = null;
+    flow.filteredLinks = null;
+    layoutFlowDiagram(); // Re-layout to use full space
+    drawFlowDiagram();
+    updateFlowUI();
+    return;
+  }
+
+  console.log('Found flow node:', node.id, 'type:', node.type);
+  flow.selectedNode = node;
+
+  // Use shared filtering logic
+  console.log('Calling computeRelatedEntities with type:', node.type, 'id:', node.id);
+  const { relatedIds, relatedLinks } = computeRelatedEntities(node.type, node.id, flow.links);
+
+  console.log('computeRelatedEntities returned', relatedIds.size, 'related IDs:', Array.from(relatedIds));
+  console.log('computeRelatedEntities returned', relatedLinks.size, 'related links');
+
+  flow.filteredNodes = relatedIds;
+  flow.filteredLinks = relatedLinks;
+
+  // Re-layout the filtered nodes to use all available space
+  layoutFlowDiagram();
+  drawFlowDiagram();
+  updateFlowUI();
+
+  // Sync to Graph view if it's initialized AND not already syncing
+  if (graph.canvas && !isSyncing) {
+    console.log('Syncing flow selection to graph view');
+    syncFlowToGraphView();
+  }
+
+  // Also sync to Column view to update the selection state in the sidebar
+  if (!isSyncing && flow.selectedNode) {
+    console.log('selectFlowNode - syncing back to column view');
+    const columnType = flow.selectedNode.type === 'challengeGroup' ? 'challengeGroup' :
+                       flow.selectedNode.type === 'challenge' ? 'subChallenge' :
+                       flow.selectedNode.type;
+    const autoTab = flow.selectedNode.type === 'challengeGroup' || flow.selectedNode.type === 'challenge' ? 'challenges' :
+                    flow.selectedNode.type === 'initiative' ? 'initiatives' :
+                    flow.selectedNode.type === 'system' ? 'systems' : 'kpis';
+
+    isSyncing = true;
+    try {
+      select(columnType, flow.selectedNode.id, {forceSelect: true, autoTab: autoTab});
+    } finally {
+      isSyncing = false;
+    }
+  }
+}
+
+function syncColumnToFlowView(type, id) {
+  if (!flow.canvas) {
+    console.log('syncColumnToFlowView skipped - no canvas');
+    return;
+  }
+
+  console.log('syncColumnToFlowView called with type:', type, 'id:', id);
+
+  // The ID from column view matches directly with flow node IDs
+  selectFlowNode(id);
+}
+
+function syncGraphToFlowView() {
+  if (!graph.selectedNode) {
+    console.log('syncGraphToFlowView - no graph selection');
+    return;
+  }
+
+  if (!flow.canvas) {
+    console.log('syncGraphToFlowView - flow not initialized, skipping');
+    return;
+  }
+
+  // Map graph node to flow node ID
+  const entityId = graph.selectedNode.entityId;
+  console.log('syncGraphToFlowView - syncing graph selection to flow:', entityId);
+  selectFlowNode(entityId);
+}
+
+function syncFlowToGraphView() {
+  if (!flow.selectedNode) {
+    console.log('syncFlowToGraphView - no flow selection');
+    return;
+  }
+
+  if (!graph.canvas) {
+    console.log('syncFlowToGraphView - graph not initialized, skipping');
+    return;
+  }
+
+  // Map flow node to graph node
+  const entityId = flow.selectedNode.id;
+  const entityType = flow.selectedNode.type;
+
+  console.log('syncFlowToGraphView - syncing flow selection to graph:', entityType, entityId);
+
+  // Find the corresponding graph node
+  let graphNodeId;
+  if (entityType === 'challengeGroup') {
+    graphNodeId = `group-${entityId}`;
+  } else if (entityType === 'challenge') {
+    graphNodeId = `challenge-${entityId}`;
+  } else if (entityType === 'initiative') {
+    graphNodeId = `initiative-${entityId}`;
+  } else if (entityType === 'system') {
+    graphNodeId = `system-${entityId}`;
+  } else if (entityType === 'kpi') {
+    graphNodeId = `kpi-${entityId}`;
+  }
+
+  const graphNode = graph.nodes.find(n => n.id === graphNodeId);
+  if (graphNode) {
+    console.log('Found corresponding graph node:', graphNodeId);
+    selectGraphNode(graphNode);
+  } else {
+    console.log('Graph node not found for:', graphNodeId);
   }
 }
 
